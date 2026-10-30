@@ -4,7 +4,7 @@ import { CAUSES } from "@/lib/causes";
 import { MID_SIZE_MAX_BUDGET, MID_SIZE_MIN_BUDGET } from "@/lib/config";
 import { money, placeName } from "@/lib/format";
 import { fundingTypeLabel } from "@/lib/funding";
-import { opportunitiesFor } from "@/lib/match";
+import { ADDED_BY_JUSTCAUSE, isExample, opportunitiesFor } from "@/lib/match";
 import { listDirectory } from "@/lib/store";
 import type { DirectoryEntry } from "@/lib/types";
 
@@ -43,13 +43,16 @@ function Stats({ entries }: { entries: DirectoryEntry[] }) {
 
 export default async function Home() {
   const entries = await listDirectory();
+  // Real organizations' opportunities before the fictional examples.
   const projects = entries
     .flatMap(opportunitiesFor)
     .filter((o) => !o.implied)
+    .sort((a, b) => Number(Boolean(a.entry.example)) - Number(Boolean(b.entry.example)))
     .slice(0, 6);
+  // Mid-size real organizations, those with impact opportunities first.
   const suggested = entries
     .filter((o) => o.kind === "imported" && o.budget != null && o.budget >= MID_SIZE_MIN_BUDGET && o.budget <= MID_SIZE_MAX_BUDGET)
-    .sort((a, b) => b.budget! - a.budget!)
+    .sort((a, b) => b.needs.length - a.needs.length || b.budget! - a.budget!)
     .slice(0, 3);
 
   return (
@@ -107,7 +110,9 @@ export default async function Home() {
                       {opp.amount != null ? money(opp.amount) : "Amount not posted"} · {fundingTypeLabel(opp.type)}
                     </p>
                   </div>
-                  <div className="shrink-0">{opp.entry.example ? <ExamplePill /> : null}</div>
+                  <div className="shrink-0">
+                    {isExample(opp) ? <ExamplePill title={opp.entry.example ? undefined : ADDED_BY_JUSTCAUSE} /> : null}
+                  </div>
                 </li>
               ))}
             </ul>

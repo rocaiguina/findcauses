@@ -196,7 +196,14 @@ export async function insertOrganization(db: DB, org: NewOrganization, file?: Fo
     if (org.impactMetrics.length) await tx.insert(impactMetrics).values(withPos(org.impactMetrics));
     if (org.networks.length) await tx.insert(networkTies).values(withPos(org.networks));
     if (org.roadmap.length) await tx.insert(roadmapItems).values(withPos(org.roadmap));
-    if (org.fundingNeeds.length) await tx.insert(fundingNeeds).values(withPos(org.fundingNeeds));
+    if (org.fundingNeeds.length) {
+      // Posted opportunities always state an amount and timeframe (the application requires both).
+      const needs = org.fundingNeeds.map(({ title, type, amount, timeframe, description }) => {
+        if (amount == null || timeframe == null) throw new Error(`Opportunity "${title}" needs an amount and timeframe`);
+        return { title, type, amount, timeframe, description };
+      });
+      await tx.insert(fundingNeeds).values(withPos(needs));
+    }
 
     if (file) {
       await tx

@@ -138,7 +138,7 @@ export function parseApplication(fd: FormData): { data?: Parsed; file?: File; er
     errors.fundingNeeds = "Fill in every field for each impact opportunity.";
   else if (fundingNeeds.some((n) => !FUNDING_TYPES.some((t) => t.id === n.type)))
     errors.fundingNeeds = "Choose a funding type for each opportunity.";
-  else if (fundingNeeds.some((n) => !Number.isFinite(n.amount) || n.amount <= 0))
+  else if (fundingNeeds.some((n) => n.amount == null || !Number.isFinite(n.amount) || n.amount <= 0))
     errors.fundingNeeds = "Enter the amount sought, in dollars, for each impact opportunity.";
 
   const stewardship = {

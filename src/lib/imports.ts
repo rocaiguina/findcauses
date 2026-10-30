@@ -172,10 +172,19 @@ const plain = (s: string) =>
     .replace(/[̀-ͯ]/g, "");
 
 /**
- * Best-effort cause for an imported listing: keywords in the name, then the IRS NTEE code when it
- * maps to a cause, then source tags; everything else is "other".
+ * Best-effort cause for an imported listing: a hand-picked override, then keywords in the name, then the
+ * IRS NTEE code when it maps to a cause, then source tags; everything else is "other".
  */
+// Hand-picked causes that override the rules, keyed by nameKey(). Add an entry when a listing is known to fit
+// a cause its name and IRS code don't reveal.
+const CAUSE_OVERRIDES: Record<string, CauseSlug> = {
+  // Centro para una Nueva Economía: economic and fiscal policy think tank.
+  "centro nueva economia": "fiscal-policy",
+};
+
 export function categorize({ name, tags, ntee }: { name: string; tags: string[]; ntee?: string | null }): CauseSlug {
+  const override = CAUSE_OVERRIDES[nameKey(name)];
+  if (override) return override;
   // Parentheticals are acronyms or sister names and caused false hits, e.g. "(Instituto Pre Vocacional…)".
   const n = plain(name).replace(/\([^)]*\)/g, " ");
   // Food banks are human services, not banking.

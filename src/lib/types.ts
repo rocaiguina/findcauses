@@ -9,7 +9,16 @@ export type ImpactMetric = { label: string; value: string };
 export type NetworkTie = { name: string; type: string; description: string };
 export type RoadmapItem = { timeframe: string; goal: string; description: string };
 /** A impact opportunity a nonprofit posts, the way a company posts a job. */
-export type FundingNeed = { title: string; type: FundingType; amount: number; timeframe: string; description: string };
+export type FundingNeed = {
+  title: string;
+  type: FundingType;
+  /** Null when the organization hasn't said; never invented. */
+  amount: number | null;
+  timeframe: string | null;
+  description: string;
+  /** Added by JustCause rather than posted by the organization; labeled "Example". */
+  example?: boolean;
+};
 
 /** Figures taken from the organization's most recent IRS Form 990. */
 export type Financials = {
@@ -98,6 +107,8 @@ export type ImportedListing = {
   irsMatchScore: number | null;
   nteeCode: string | null;
   irsRulingDate: string | null;
+  /** Impact opportunities attached to the listing (examples until the organization claims it). */
+  needs: FundingNeed[];
   /** Newest first. */
   filings: IrsFiling[];
 };

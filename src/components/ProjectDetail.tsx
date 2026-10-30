@@ -4,6 +4,7 @@ import { Avatar, CauseBadge, ExamplePill, StatusPill, initials } from "./OrgCard
 import { money, monthYear, placeName, tenure } from "@/lib/format";
 import { fundingTypeLabel } from "@/lib/funding";
 import { linkedinCompanySearch, linkedinPeopleSearch } from "@/lib/linkedin";
+import { ADDED_BY_JUSTCAUSE, isExample } from "@/lib/match";
 import type { ShortlistItem } from "@/lib/shortlist";
 import type { ImportedListing, Organization } from "@/lib/types";
 
@@ -67,12 +68,12 @@ export function ProjectDetail({
           <CauseBadge slug={e.cause} />
           {opp.implied ? (
             <StatusPill>No opportunity posted yet</StatusPill>
-          ) : (
+          ) : opp.need?.example ? null : (
             <span className="inline-flex rounded-full bg-brand-soft px-2 py-0.5 text-xs font-semibold text-brand">
               Seeking funding
             </span>
           )}
-          {e.example && <ExamplePill />}
+          {isExample(opp) && <ExamplePill title={e.example ? undefined : ADDED_BY_JUSTCAUSE} />}
           {e.kind === "imported" && <StatusPill>Unclaimed listing</StatusPill>}
         </div>
         <div className="mt-4 flex flex-wrap gap-2">
@@ -124,7 +125,10 @@ export function ProjectDetail({
             they&apos;re raising money for. We&apos;ve assumed general operating support.
           </p>
         ) : (
-          <p className="text-sm leading-relaxed">{opp.need?.description}</p>
+          <>
+            <p className="text-sm leading-relaxed">{opp.need?.description}</p>
+            {opp.need?.example && !e.example && <p className="mt-2 text-xs text-muted">{ADDED_BY_JUSTCAUSE}</p>}
+          </>
         )}
       </Block>
 

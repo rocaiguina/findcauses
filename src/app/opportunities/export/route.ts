@@ -19,7 +19,7 @@ export async function GET(req: Request) {
   const { items } = buildShortlist(await listDirectory(), criteria, size);
 
   const header = [
-    "Rank", "Impact opportunity", "Organization", "Example (fictional)", "Location", "Funding type", "Amount sought", "Timeframe",
+    "Rank", "Impact opportunity", "Organization", "Example", "Location", "Funding type", "Amount sought", "Timeframe",
     "Match", "Why it fits", "Organization budget", "Budget year", "IRS-recognized since", "Profile",
     "LinkedIn: organization", "LinkedIn: people",
   ];
@@ -27,7 +27,7 @@ export async function GET(req: Request) {
     i + 1,
     opp.title + (opp.implied ? " (no opportunity posted)" : ""),
     opp.entry.name,
-    opp.entry.example ? "yes" : "",
+    opp.entry.example ? "yes" : opp.need?.example ? "added by JustCause" : "",
     [opp.entry.city, opp.entry.state].filter(Boolean).join(", "),
     fundingTypeLabel(opp.type),
     opp.amount ?? "",

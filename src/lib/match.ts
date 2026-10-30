@@ -22,6 +22,12 @@ export type FunderPrefs = {
 export type ReasonStatus = "match" | "partial" | "miss" | "unknown";
 export type Reason = { key: string; status: ReasonStatus; text: string; mustHave?: boolean };
 
+/** Shown on opportunities JustCause added to a real organization's listing. */
+export const ADDED_BY_JUSTCAUSE = "Example opportunity added by JustCause, not posted by the organization. Confirm with them.";
+
+/** True for fictional example organizations and for example opportunities added to real listings. */
+export const isExample = (opp: Opportunity) => Boolean(opp.entry.example || opp.need?.example);
+
 /** A funding need, or the general support implied for listings that haven't posted any. */
 export type Opportunity = {
   key: string;
@@ -172,6 +178,7 @@ export function matchOpportunity(prefs: FunderPrefs, opp: Opportunity): MatchRes
 
   const highlights: string[] = [];
   if (e.example) highlights.push("Example organization (fictional), for demonstration");
+  else if (opp.need?.example) highlights.push(ADDED_BY_JUSTCAUSE);
   else if (e.kind === "profile") highlights.push("Verified profile, checked against its Form 990");
   if (e.programShare != null && e.programShare >= 0.75)
     highlights.push(`${Math.round(e.programShare * 100)}% of spending goes to programs`);

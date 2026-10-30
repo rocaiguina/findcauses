@@ -26,10 +26,14 @@ export function StatusPill({ children, title }: { children: React.ReactNode; tit
   );
 }
 
-export function ExamplePill() {
+export function ExamplePill({
+  title = "Fictional organization and opportunity, included to demonstrate the flow",
+}: {
+  title?: string;
+}) {
   return (
     <span
-      title="Fictional organization and opportunity, included to demonstrate the flow"
+      title={title}
       className="inline-flex items-center rounded-full bg-[#5c3b96]/10 px-2 py-0.5 text-xs font-semibold text-[#5c3b96]"
     >
       Example
@@ -152,6 +156,11 @@ export function OrgCard({ entry }: { entry: DirectoryEntry }) {
         <div className="mt-2">
           <Facts entry={entry} />
         </div>
+        {entry.needs.length > 0 && (
+          <span className="mt-2 inline-flex rounded-full bg-brand-soft px-2 py-0.5 text-xs font-semibold text-brand">
+            {entry.needs.length} impact {entry.needs.length === 1 ? "opportunity" : "opportunities"}
+          </span>
+        )}
         <div className="flex-1" />
         <Link href={entry.href} className="btn-ghost mt-4 w-full">
           View profile

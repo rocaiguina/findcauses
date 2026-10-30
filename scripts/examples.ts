@@ -1,5 +1,7 @@
-// Fictional example organizations with posted funding projects, so the funder flow can be demoed
-// before real nonprofits post theirs. Every one is flagged `example` and labeled "Example" in the UI.
+// Example data so the funder flow can be demoed before real nonprofits post their own:
+// - fictional organizations with posted impact opportunities, flagged `example`;
+// - example impact opportunities on real imported listings, flagged `example` and labeled
+//   "added by JustCause, not posted by the organization". Amounts and timeframes are left unknown.
 //
 // Usage: npm run examples:load   (replaces existing examples)
 //        npm run examples:clear
@@ -7,8 +9,9 @@ import { loadEnvConfig } from "@next/env";
 import { eq } from "drizzle-orm";
 import { closeDb, getDb } from "../src/db";
 import { insertOrganization, type NewOrganization } from "../src/db/organizations";
-import { organizations } from "../src/db/schema";
+import { importedOrgs, listingNeeds, organizations } from "../src/db/schema";
 import { slugify } from "../src/lib/format";
+import { nameKey } from "../src/lib/imports";
 import type { CauseSlug } from "../src/lib/causes";
 import type { Financials, FundingNeed } from "../src/lib/types";
 
@@ -223,15 +226,56 @@ const EXAMPLES: Example[] = [
   },
 ];
 
+/** Example impact opportunities for real imported listings, keyed by the listing's exact name. */
+const LISTING_EXAMPLES: Record<string, Omit<FundingNeed, "example">[]> = {
+  "Centro para una Nueva Economía": [
+    {
+      title: "Living wage calculator",
+      type: "program",
+      amount: null,
+      timeframe: null,
+      description:
+        "A public, regularly updated calculator of what households of different sizes need to earn to cover basic costs in each Puerto Rico municipality, to inform wage policy, employers and public benefits.",
+    },
+    {
+      title: "Research to lessen income inequality in Puerto Rico",
+      type: "program",
+      amount: null,
+      timeframe: null,
+      description:
+        "Research on what drives income inequality in Puerto Rico and which tax, labor and public-benefit policies could reduce it, published as briefs for lawmakers and the public.",
+    },
+  ],
+};
+
 async function clear() {
-  const removed = await getDb().delete(organizations).where(eq(organizations.example, true)).returning({ id: organizations.id });
+  const db = getDb();
+  const removed = await db.delete(organizations).where(eq(organizations.example, true)).returning({ id: organizations.id });
+  await db.delete(listingNeeds).where(eq(listingNeeds.example, true));
   return removed.length;
+}
+
+async function loadListingExamples(): Promise<number> {
+  const db = getDb();
+  let count = 0;
+  for (const [name, needs] of Object.entries(LISTING_EXAMPLES)) {
+    const [listing] = await db.select({ id: importedOrgs.id }).from(importedOrgs).where(eq(importedOrgs.nameKey, nameKey(name)));
+    if (!listing) {
+      console.warn(`Skipped example opportunities for "${name}": listing not imported.`);
+      continue;
+    }
+    await db
+      .insert(listingNeeds)
+      .values(needs.map((n, position) => ({ ...n, importedOrgId: listing.id, position, example: true })));
+    count += needs.length;
+  }
+  return count;
 }
 
 async function main() {
   const removed = await clear();
   if (process.argv.includes("--clear")) {
-    console.log(`Removed ${removed} example organizations.`);
+    console.log(`Removed ${removed} example organizations and all example opportunities on real listings.`);
     return;
   }
   for (const [i, e] of EXAMPLES.entries()) {
@@ -274,7 +318,10 @@ async function main() {
     await insertOrganization(getDb(), org);
   }
   const projects = EXAMPLES.reduce((n, e) => n + e.needs.length, 0);
-  console.log(`Loaded ${EXAMPLES.length} example organizations with ${projects} projects (replaced ${removed}).`);
+  const listingProjects = await loadListingExamples();
+  console.log(
+    `Loaded ${EXAMPLES.length} example organizations with ${projects} opportunities, and ${listingProjects} example opportunities on real listings (replaced ${removed} organizations).`,
+  );
 }
 
 main()

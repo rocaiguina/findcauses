@@ -248,3 +248,26 @@ export const subscriptions = pgTable(
   },
   (t) => [uniqueIndex("subscriptions_email_query_idx").on(t.email, t.query)],
 );
+
+/**
+ * Impact opportunities attached to imported (unclaimed) listings. Until an organization claims its listing,
+ * these are added by JustCause and flagged `example`, so they're labeled as not posted by the organization.
+ */
+export const listingNeeds = pgTable(
+  "listing_needs",
+  {
+    id: serial("id").primaryKey(),
+    importedOrgId: uuid("imported_org_id")
+      .notNull()
+      .references(() => importedOrgs.id, { onDelete: "cascade" }),
+    position: integer("position").notNull(),
+    title: text("title").notNull(),
+    type: fundingType("type").notNull(),
+    /** Unknown until the organization says; never invented. */
+    amount: bigint("amount", { mode: "number" }),
+    timeframe: text("timeframe"),
+    description: text("description").notNull(),
+    example: boolean("example").notNull().default(true),
+  },
+  (t) => [index("listing_needs_org_idx").on(t.importedOrgId, t.position)],
+);

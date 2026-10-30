@@ -134,7 +134,7 @@ export function importedEntry(l: ImportedListing): DirectoryEntry {
     revenue: latest?.totalRevenue ?? undefined,
     netAssets: latest?.netAssets ?? undefined,
     irsSince: l.irsRulingDate ?? undefined,
-    needs: [],
+    needs: l.needs ?? [],
     // The IRS name and an English rendering let funders search "Center for a New Economy" for a Spanish name.
     searchText: searchWords(
       [l.name, toEnglish(l.name), l.irsName, l.mission, l.city, ...l.tags].filter(Boolean).join(" "),
