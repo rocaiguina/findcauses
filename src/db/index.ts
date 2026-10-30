@@ -8,9 +8,11 @@ export type DB = NodePgDatabase<typeof schema>;
 const globalForDb = globalThis as unknown as { justcausePool?: Pool };
 
 function createPool(): Pool {
-  const connectionString = process.env.DATABASE_URL;
-  if (!connectionString) throw new Error("DATABASE_URL is not set. See README.md.");
-  return new Pool({ connectionString, max: Number(process.env.DATABASE_POOL_MAX ?? 10) });
+  // DATABASE_URL locally; on Netlify, Netlify Database provides NETLIFY_DB_URL.
+  const connectionString = process.env.DATABASE_URL ?? process.env.NETLIFY_DB_URL;
+  if (!connectionString) throw new Error("DATABASE_URL (or NETLIFY_DB_URL on Netlify) is not set. See README.md.");
+  // Serverless functions each hold their own pool, so keep it small by default.
+  return new Pool({ connectionString, max: Number(process.env.DATABASE_POOL_MAX ?? 5) });
 }
 
 let instance: DB | undefined;
