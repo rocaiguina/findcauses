@@ -58,14 +58,14 @@ export default async function ShortlistPage({ searchParams }: { searchParams: Pr
                 <Avatar name={e.name} cause={e.cause} size={48} />
                 <div className="min-w-0 flex-1">
                   <div className="flex flex-wrap items-center gap-2">
-                    <Link href={q ? `${e.href}?m=${encodeURIComponent(q)}` : e.href} className="font-semibold hover:text-brand hover:underline">
+                    <Link href={q ? `${e.href}?m=${encodeURIComponent(q)}` : e.href} className="font-semibold hover:underline underline-offset-4">
                       {e.name}
                     </Link>
                     {result && <MatchBadge result={result} />}
                     {isExample(opp) && <ExamplePill title={e.example ? undefined : ADDED_BY_JUSTCAUSE} />}
                   </div>
                   <p className="text-sm">
-                    <span className="font-semibold text-brand">{opp.title}</span>
+                    <span className="font-medium text-ink">{opp.title}</span>
                     <span className="text-muted">
                       {" "}· {opp.amount != null ? money(opp.amount) : opp.implied ? "No opportunity posted" : "Amount not posted"} ·{" "}
                       {fundingTypeLabel(opp.type)}

@@ -54,7 +54,7 @@ export function ProjectDetail({
         <div className="flex items-center gap-3">
           <Avatar name={e.name} cause={e.cause} size={48} />
           <div className="min-w-0">
-            <Link href={`${e.href}?m=${encodeURIComponent(query)}`} className="font-semibold hover:text-brand hover:underline">
+            <Link href={`${e.href}?m=${encodeURIComponent(query)}`} className="font-semibold hover:underline underline-offset-4">
               {e.name}
             </Link>
             <p className="text-sm text-muted">
@@ -70,7 +70,7 @@ export function ProjectDetail({
           {opp.implied ? (
             <StatusPill>No opportunity posted yet</StatusPill>
           ) : opp.need?.example ? null : (
-            <span className="inline-flex rounded-full bg-brand-soft px-2 py-0.5 text-xs font-semibold text-brand">
+            <span className="inline-flex rounded-full bg-black/[0.05] px-2 py-0.5 text-xs font-medium text-ink">
               Seeking funding
             </span>
           )}
@@ -150,7 +150,7 @@ export function ProjectDetail({
         )}
         <Link
           href={`${e.href}?m=${encodeURIComponent(query)}`}
-          className="mt-3 inline-block text-sm font-semibold text-brand hover:underline"
+          className="mt-3 inline-block text-sm font-medium text-link"
         >
           Full profile, financials and board →
         </Link>
@@ -186,7 +186,7 @@ export function ProjectDetail({
               href={linkedinPeopleSearch(e.name)}
               target="_blank"
               rel="noopener noreferrer"
-              className="font-semibold text-brand hover:underline"
+              className="font-medium text-link"
             >
               Search LinkedIn for people at {e.name}
             </a>

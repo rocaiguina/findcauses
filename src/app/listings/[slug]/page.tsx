@@ -75,7 +75,7 @@ export default async function ListingPage({ params, searchParams }: Props) {
             <p className="mt-1 text-sm text-muted">
               Claim it to show funders your track record, roadmap, board, stewardship and funding needs.
             </p>
-            <Link href="/apply" className="btn-primary mt-3 w-full">
+            <Link href="/apply" className="btn-ghost mt-3 w-full">
               Claim this listing
             </Link>
           </div>
@@ -85,7 +85,7 @@ export default async function ListingPage({ params, searchParams }: Props) {
               {l.sources.map((s) => (
                 <li key={s}>
                   <a
-                    className="font-semibold text-brand hover:underline"
+                    className="font-medium text-link"
                     href={SOURCES[s].url}
                     target="_blank"
                     rel="noopener noreferrer"

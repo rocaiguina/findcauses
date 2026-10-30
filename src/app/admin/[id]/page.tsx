@@ -16,7 +16,7 @@ export default async function AdminReviewPage({ params }: { params: Promise<{ id
       <div className="border-b border-accent/40 bg-accent/10">
         <div className="container-page flex flex-wrap items-center justify-between gap-3 py-4 text-sm">
           <div>
-            <Link href="/admin" className="text-muted hover:text-brand">
+            <Link href="/admin" className="text-muted hover:underline underline-offset-4">
               ← Review queue
             </Link>
             <span className="ml-3">

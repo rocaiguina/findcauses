@@ -84,7 +84,7 @@ export function HowYouMatch({ opp, result, editHref }: { opp: Opportunity; resul
           ))}
         </ul>
       )}
-      <Link href={editHref} className="mt-3 inline-block text-sm font-semibold text-brand hover:underline">
+      <Link href={editHref} className="mt-3 inline-block text-sm font-medium text-link">
         Edit your answers
       </Link>
     </div>
@@ -98,7 +98,7 @@ export function MatchCta() {
       <p className="mt-1 text-sm text-muted">
         Answer 4 quick questions and get your best matches, with why. No account needed.
       </p>
-      <Link href="/find" className="btn-primary mt-3 w-full">
+      <Link href="/find" className="btn-ghost mt-3 w-full">
         Find impact opportunities
       </Link>
     </div>

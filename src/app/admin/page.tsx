@@ -28,7 +28,7 @@ export default async function AdminPage({ searchParams }: { searchParams: Promis
           <h1 className="mt-2 text-4xl font-semibold">Review queue</h1>
         </div>
         <form action={logout}>
-          <button className="text-sm text-muted hover:text-brand">Sign out</button>
+          <button className="text-sm text-muted hover:underline underline-offset-4">Sign out</button>
         </form>
       </div>
       {usingSnapshot && (
@@ -42,7 +42,7 @@ export default async function AdminPage({ searchParams }: { searchParams: Promis
           <Link
             key={t.status}
             href={`/admin?status=${t.status}`}
-            className={`rounded-full px-4 py-1.5 text-sm ${t.status === status ? "bg-brand text-white" : "border border-line bg-card"}`}
+            className={`rounded-full px-4 py-1.5 text-sm ${t.status === status ? "bg-ink text-white" : "border border-line bg-card"}`}
           >
             {t.label}
           </Link>
@@ -76,7 +76,7 @@ export default async function AdminPage({ searchParams }: { searchParams: Promis
                 <td className="px-4 py-3 tabular-nums">{o.ein}</td>
                 <td className="px-4 py-3 text-muted">{o.submittedAt.slice(0, 10)}</td>
                 <td className="px-4 py-3 text-right">
-                  <Link href={`/admin/${o.id}`} className="font-semibold text-brand hover:underline">
+                  <Link href={`/admin/${o.id}`} className="font-medium text-link">
                     Review →
                   </Link>
                 </td>

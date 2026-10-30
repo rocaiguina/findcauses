@@ -22,7 +22,7 @@ export function MatchAside({ entry, m }: { entry: DirectoryEntry; m?: string | s
   const best = bestMatchFor(ctx.prefs, entry);
   return (
     <div className="space-y-2">
-      <Link href={`/opportunities?${ctx.query}`} className="block text-sm font-semibold text-brand hover:underline">
+      <Link href={`/opportunities?${ctx.query}`} className="block text-sm font-medium text-link">
         ← Back to your shortlist
       </Link>
       <HowYouMatch opp={best.opp} result={best.result} editHref={`/find?${ctx.query}`} />

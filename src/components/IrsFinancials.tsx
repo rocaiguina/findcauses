@@ -37,7 +37,7 @@ export function IrsFinancials({
       <p className="text-sm text-muted">
         Matched to the IRS record &ldquo;{irsName}&rdquo; ({matchScore}% name match). Figures from{" "}
         <a
-          className="font-semibold text-brand hover:underline"
+          className="font-medium text-link"
           href={`https://projects.propublica.org/nonprofits/organizations/${ein}`}
           target="_blank"
           rel="noopener noreferrer"

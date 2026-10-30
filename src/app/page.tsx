@@ -62,7 +62,7 @@ export default async function Home() {
                   <span className="mt-2 h-1.5 w-1.5 shrink-0 rounded-full bg-brand" aria-hidden />
                   <div className="min-w-0 flex-1">
                     <div className="flex flex-wrap items-center gap-2">
-                      <Link href={e.href} className="text-[15px] font-medium hover:text-brand">
+                      <Link href={e.href} className="text-[15px] font-medium hover:underline underline-offset-4">
                         {opp.title}
                       </Link>
                       {isExample(opp) && <ExamplePill title={e.example ? undefined : ADDED_BY_JUSTCAUSE} />}

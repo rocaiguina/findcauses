@@ -43,7 +43,7 @@ export function SubscribeCard({ query }: { query: string }) {
             aria-label="Email"
             className="field min-w-0 flex-1"
           />
-          <button disabled={pending} className="btn-primary shrink-0 disabled:opacity-60">
+          <button disabled={pending} className="btn-ghost shrink-0 disabled:opacity-60">
             {pending ? "…" : "Subscribe"}
           </button>
         </form>

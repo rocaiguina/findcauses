@@ -119,7 +119,7 @@ export function AllOpportunities({ items }: { items: ListedOpportunity[] }) {
               <Avatar name={i.orgName} cause={i.cause} size={40} />
               <div className="min-w-0 flex-1">
                 <div className="flex flex-wrap items-center gap-2">
-                  <Link href={i.href} className="text-[15px] font-medium leading-snug hover:text-brand">
+                  <Link href={i.href} className="text-[15px] font-medium leading-snug hover:underline underline-offset-4">
                     {i.title}
                   </Link>
                   {i.example && <ExamplePill title={i.exampleNote} />}

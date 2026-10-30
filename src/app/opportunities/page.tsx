@@ -108,13 +108,13 @@ export default async function ProjectsPage({ searchParams }: { searchParams: Pro
                       scroll={false}
                       aria-current={on ? "true" : undefined}
                       className={`flex gap-3 border-l-4 px-4 py-3 transition-colors ${
-                        on ? "border-brand bg-brand-soft/60" : "border-transparent hover:bg-black/[0.03]"
+                        on ? "border-ink bg-black/[0.03]" : "border-transparent hover:bg-black/[0.03]"
                       }`}
                     >
                       <span className="w-4 shrink-0 pt-1 text-sm font-semibold text-muted">{i + 1}</span>
                       <Avatar name={e.name} cause={e.cause} size={44} />
                       <div className="min-w-0 flex-1 pr-6">
-                        <p className="font-semibold leading-snug text-brand">{item.opp.title}</p>
+                        <p className="font-medium leading-snug text-ink">{item.opp.title}</p>
                         <p className="text-sm">{e.name}</p>
                         <p className="text-xs text-muted">
                           {[e.city, placeName(e.state)].filter(Boolean).join(", ")} ·{" "}

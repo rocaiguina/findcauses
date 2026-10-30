@@ -100,7 +100,7 @@ export function OrgRow({ entry }: { entry: DirectoryEntry }) {
       </Link>
       <div className="min-w-0 flex-1">
         <div className="flex flex-wrap items-center gap-x-2 gap-y-1">
-          <Link href={entry.href} className="text-[15px] font-medium leading-snug hover:text-brand">
+          <Link href={entry.href} className="text-[15px] font-medium leading-snug hover:underline underline-offset-4">
             {entry.name}
           </Link>
           {entry.example && <ExamplePill />}
@@ -127,7 +127,7 @@ export function OrgRow({ entry }: { entry: DirectoryEntry }) {
           {entry.needs.length > 0 && (
             <>
               <span aria-hidden>·</span>
-              <span className="font-medium text-brand">
+              <span className="font-medium text-ink">
                 {entry.needs.length} impact {entry.needs.length === 1 ? "opportunity" : "opportunities"}
               </span>
             </>
@@ -161,7 +161,7 @@ export function OrgCard({ entry }: { entry: DirectoryEntry }) {
         </span>
         <Link
           href={entry.href}
-          className="mt-2 line-clamp-2 font-semibold leading-snug text-ink hover:text-brand hover:underline"
+          className="mt-2 line-clamp-2 font-semibold leading-snug text-ink hover:underline underline-offset-4"
         >
           {entry.name}
         </Link>
@@ -174,7 +174,7 @@ export function OrgCard({ entry }: { entry: DirectoryEntry }) {
           <Facts entry={entry} />
         </div>
         {entry.needs.length > 0 && (
-          <span className="mt-2 inline-flex rounded-full bg-brand-soft px-2 py-0.5 text-xs font-semibold text-brand">
+          <span className="mt-2 inline-flex rounded-full bg-black/[0.05] px-2 py-0.5 text-xs font-medium text-ink">
             {entry.needs.length} impact {entry.needs.length === 1 ? "opportunity" : "opportunities"}
           </span>
         )}

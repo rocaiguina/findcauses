@@ -210,7 +210,7 @@ function ListEditor({
       <button
         type="button"
         onClick={() => setRows([...rows, blankRows({ ...spec, min: 1 })[0]])}
-        className="text-sm font-semibold text-brand hover:underline"
+        className="text-sm font-medium text-link"
       >
         + {addLabel}
       </button>
@@ -470,7 +470,7 @@ export function ApplicationForm() {
             type="file"
             accept="application/pdf,.pdf"
             required
-            className="block w-full text-sm file:mr-4 file:rounded-full file:border-0 file:bg-brand-soft file:px-4 file:py-2 file:font-semibold file:text-brand"
+            className="block w-full text-sm file:mr-4 file:rounded-full file:border-0 file:bg-black/[0.05] file:px-4 file:py-2 file:font-semibold file:text-ink"
           />
           <p className="mt-1 text-xs text-muted">The complete filed return, including schedules.</p>
           <Err msg={errors.form990} />

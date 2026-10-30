@@ -4,7 +4,7 @@ export default async function SubmittedPage({ searchParams }: { searchParams: Pr
   const { name } = await searchParams;
   return (
     <div className="container-page max-w-2xl py-20 text-center">
-      <span className="mx-auto flex h-14 w-14 items-center justify-center rounded-full bg-brand-soft text-2xl text-brand">
+      <span className="mx-auto flex h-14 w-14 items-center justify-center rounded-full bg-black/[0.05] text-2xl text-ink">
         ✓
       </span>
       <h1 className="mt-6 text-4xl font-semibold">Application received</h1>

@@ -162,7 +162,7 @@ export function SimilarOrgs({ entries }: { entries: DirectoryEntry[] }) {
           <li key={`${e.kind}-${e.id}`} className="flex gap-3 py-3">
             <Avatar name={e.name} cause={e.cause} size={48} />
             <div className="min-w-0 flex-1">
-              <Link href={e.href} className="line-clamp-2 text-sm font-semibold leading-snug hover:text-brand hover:underline">
+              <Link href={e.href} className="line-clamp-2 text-sm font-semibold leading-snug hover:underline underline-offset-4">
                 {e.name}
               </Link>
               <p className="line-clamp-1 text-xs text-muted">{e.summary}</p>

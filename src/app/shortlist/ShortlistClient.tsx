@@ -60,7 +60,7 @@ export function ShortlistActions({ ids, csvHref }: { ids: string[]; csvHref: str
   return (
     <div className="no-print flex flex-wrap gap-2">
       {isShared && (
-        <button type="button" className="btn-primary" onClick={() => writeSaved([...keys, ...ids])}>
+        <button type="button" className="btn-ghost" onClick={() => writeSaved([...keys, ...ids])}>
           ☆ Save this list
         </button>
       )}

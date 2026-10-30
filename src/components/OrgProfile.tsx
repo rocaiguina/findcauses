@@ -81,7 +81,7 @@ export function OrgProfile({
               {org.contact.name}
               <span className="text-muted"> · {org.contact.title}</span>
             </p>
-            <a className="mt-1 block font-semibold text-brand hover:underline" href={`mailto:${org.contact.email}`}>
+            <a className="mt-1 block font-medium text-link" href={`mailto:${org.contact.email}`}>
               {org.contact.email}
             </a>
             <p className="text-muted">{org.contact.phone}</p>
@@ -135,7 +135,7 @@ export function OrgProfile({
         <div className="mt-4 grid gap-2 sm:grid-cols-3">
           {org.impactMetrics.map((m) => (
             <div key={m.label} className="rounded-lg border border-line p-3">
-              <p className="text-xl font-semibold text-brand">{m.value}</p>
+              <p className="text-xl font-medium text-ink">{m.value}</p>
               <p className="text-xs text-muted">{m.label}</p>
             </div>
           ))}

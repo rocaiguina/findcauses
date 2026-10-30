@@ -58,7 +58,7 @@ export function Finder({ initial }: { initial: Criteria }) {
   return (
     <div className="card overflow-hidden">
       <div className="h-1 bg-line">
-        <div className="h-full bg-brand transition-all" style={{ width: `${(step / STEPS) * 100}%` }} />
+        <div className="h-full bg-ink transition-all" style={{ width: `${(step / STEPS) * 100}%` }} />
       </div>
       <div className="px-5 py-6 sm:px-8">
         <p className="text-xs font-semibold text-muted">

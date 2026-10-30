@@ -17,7 +17,7 @@ function Chevron({ open }: { open: boolean }) {
 
 function SavedCount({ n }: { n: number }) {
   if (!n) return null;
-  return <span className="rounded-full bg-brand px-1.5 text-[11px] font-semibold leading-[18px] text-white">{n}</span>;
+  return <span className="rounded-full bg-ink px-1.5 text-[11px] font-semibold leading-[18px] text-white">{n}</span>;
 }
 
 /** The dark "Directory" panel, shown under the header on desktop and inside the phone menu. */
@@ -161,7 +161,7 @@ export function TopNav() {
           <Link href="/apply" className="text-[15px] text-ink/75 hover:text-ink">
             List your nonprofit
           </Link>
-          <Link href="/find" className="btn-primary !px-5">
+          <Link href="/find" className="btn-ghost !px-5">
             Find matches
           </Link>
         </div>
