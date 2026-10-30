@@ -4,9 +4,21 @@ import { useRouter } from "next/navigation";
 import { useState } from "react";
 import { CAUSES } from "@/lib/causes";
 import { US_STATES } from "@/lib/config";
+import { FUNDING_TYPES } from "@/lib/funding";
 
 type Row = Record<string, string>;
-type ListSpec = { key: string; fields: { key: string; label: string; placeholder?: string; wide?: boolean }[]; min: number };
+type ListSpec = {
+  key: string;
+  fields: {
+    key: string;
+    label: string;
+    placeholder?: string;
+    wide?: boolean;
+    options?: readonly { id: string; label: string }[];
+    numeric?: boolean;
+  }[];
+  min: number;
+};
 
 const LISTS: Record<string, ListSpec> = {
   impactMetrics: {
@@ -53,6 +65,17 @@ const LISTS: Record<string, ListSpec> = {
       { key: "affiliation", label: "Professional affiliation", wide: true },
     ],
   },
+  fundingNeeds: {
+    key: "fundingNeeds",
+    min: 1,
+    fields: [
+      { key: "title", label: "Opportunity", placeholder: "e.g. Expand tutoring to 3 new schools" },
+      { key: "type", label: "Type of funding", options: FUNDING_TYPES },
+      { key: "amount", label: "Amount sought (USD)", placeholder: "250000", numeric: true },
+      { key: "timeframe", label: "Timeframe", placeholder: "2026–2027" },
+      { key: "description", label: "What the money will do", wide: true },
+    ],
+  },
 };
 
 const blankRows = (spec: ListSpec) =>
@@ -66,8 +89,8 @@ function Step({ n, title, hint, children }: { n: number; title: string; hint?: s
   return (
     <section className="card p-6 sm:p-8">
       <div className="flex items-baseline gap-3">
-        <span className="font-serif text-lg text-accent">{String(n).padStart(2, "0")}</span>
-        <h2 className="font-serif text-2xl font-semibold">{title}</h2>
+        <span className="text-lg text-accent">{String(n).padStart(2, "0")}</span>
+        <h2 className="text-2xl font-semibold">{title}</h2>
       </div>
       {hint && <p className="mt-1 text-sm text-muted">{hint}</p>}
       <div className="mt-6 space-y-5">{children}</div>
@@ -145,13 +168,32 @@ function ListEditor({
           {spec.fields.map((f) => (
             <div key={f.key} className={f.wide ? "sm:col-span-2" : ""}>
               <label className="mb-1 block text-xs font-medium text-muted">{f.label}</label>
-              <input
-                className="field"
-                required
-                placeholder={f.placeholder}
-                value={row[f.key]}
-                onChange={(e) => update(i, f.key, e.target.value)}
-              />
+              {f.options ? (
+                <select
+                  className="field"
+                  required
+                  value={row[f.key]}
+                  onChange={(e) => update(i, f.key, e.target.value)}
+                >
+                  <option value="" disabled>
+                    Select…
+                  </option>
+                  {f.options.map((o) => (
+                    <option key={o.id} value={o.id}>
+                      {o.label}
+                    </option>
+                  ))}
+                </select>
+              ) : (
+                <input
+                  className="field"
+                  required
+                  inputMode={f.numeric ? "numeric" : undefined}
+                  placeholder={f.placeholder}
+                  value={row[f.key]}
+                  onChange={(e) => update(i, f.key, e.target.value)}
+                />
+              )}
             </div>
           ))}
           <button
@@ -333,6 +375,20 @@ export function ApplicationForm() {
 
       <Step
         n={6}
+        title="Impact opportunities"
+        hint="What you're raising money for right now. Funders see these like job postings: each one can land on a funder's shortlist of 6, matched by cause, size, gift amount and type of funding."
+      >
+        <ListEditor
+          spec={LISTS.fundingNeeds}
+          rows={lists.fundingNeeds}
+          setRows={setList("fundingNeeds")}
+          addLabel="Add impact opportunity"
+          error={errors.fundingNeeds}
+        />
+      </Step>
+
+      <Step
+        n={7}
         title="Financials from your Form 990"
         hint="Copy the figures exactly from your most recent filed 990. We verify them against the uploaded PDF. JustCause lists organizations with $1M–$50M in total expenses."
       >
@@ -340,15 +396,69 @@ export function ApplicationForm() {
           <Field name="fiscalYear" label="Fiscal year (tax year)" placeholder="2025" errors={errors} />
           <Field name="employees" label="Employees (Part I, line 5)" inputMode="numeric" errors={errors} />
           <Field name="volunteers" label="Volunteers (Part I, line 6)" inputMode="numeric" errors={errors} />
-          <Field name="totalRevenue" label="Total revenue (Part I, line 12)" inputMode="numeric" placeholder="$" errors={errors} />
-          <Field name="contributions" label="Contributions & grants (line 8)" inputMode="numeric" placeholder="$" errors={errors} />
-          <Field name="programRevenue" label="Program service revenue (line 9)" inputMode="numeric" placeholder="$" errors={errors} />
-          <Field name="totalExpenses" label="Total expenses (Part I, line 18)" inputMode="numeric" placeholder="$" errors={errors} />
-          <Field name="programExpenses" label="Program services (Part IX, 25B)" inputMode="numeric" placeholder="$" errors={errors} />
-          <Field name="managementExpenses" label="Management & general (25C)" inputMode="numeric" placeholder="$" errors={errors} />
-          <Field name="fundraisingExpenses" label="Fundraising (25D)" inputMode="numeric" placeholder="$" errors={errors} />
-          <Field name="totalAssets" label="Total assets (line 20, EOY)" inputMode="numeric" placeholder="$" errors={errors} />
-          <Field name="netAssets" label="Net assets (line 22, EOY)" inputMode="numeric" placeholder="$" errors={errors} />
+          <Field
+            name="totalRevenue"
+            label="Total revenue (Part I, line 12)"
+            inputMode="numeric"
+            placeholder="$"
+            errors={errors}
+          />
+          <Field
+            name="contributions"
+            label="Contributions & grants (line 8)"
+            inputMode="numeric"
+            placeholder="$"
+            errors={errors}
+          />
+          <Field
+            name="programRevenue"
+            label="Program service revenue (line 9)"
+            inputMode="numeric"
+            placeholder="$"
+            errors={errors}
+          />
+          <Field
+            name="totalExpenses"
+            label="Total expenses (Part I, line 18)"
+            inputMode="numeric"
+            placeholder="$"
+            errors={errors}
+          />
+          <Field
+            name="programExpenses"
+            label="Program services (Part IX, 25B)"
+            inputMode="numeric"
+            placeholder="$"
+            errors={errors}
+          />
+          <Field
+            name="managementExpenses"
+            label="Management & general (25C)"
+            inputMode="numeric"
+            placeholder="$"
+            errors={errors}
+          />
+          <Field
+            name="fundraisingExpenses"
+            label="Fundraising (25D)"
+            inputMode="numeric"
+            placeholder="$"
+            errors={errors}
+          />
+          <Field
+            name="totalAssets"
+            label="Total assets (line 20, EOY)"
+            inputMode="numeric"
+            placeholder="$"
+            errors={errors}
+          />
+          <Field
+            name="netAssets"
+            label="Net assets (line 22, EOY)"
+            inputMode="numeric"
+            placeholder="$"
+            errors={errors}
+          />
         </div>
         <div>
           <label htmlFor="form990" className="field-label">
@@ -367,7 +477,7 @@ export function ApplicationForm() {
         </div>
       </Step>
 
-      <Step n={7} title="Board of directors" hint="List all current voting board members.">
+      <Step n={8} title="Board of directors" hint="List all current voting board members.">
         <ListEditor
           spec={LISTS.board}
           rows={lists.board}
@@ -377,15 +487,15 @@ export function ApplicationForm() {
         />
       </Step>
 
-      <Step n={8} title="Stewardship" hint="How you govern, account for and report on the money you receive.">
+      <Step n={9} title="Stewardship" hint="How you govern, account for and report on the money you receive.">
         <div className="grid gap-5 sm:grid-cols-2">
           <YesNo name="independentAudit" label="Are your financials independently audited?" errors={errors} />
-          <Field
-            name="auditor"
-            label="Audit firm (or why you are not audited)"
+          <Field name="auditor" label="Audit firm (or why you are not audited)" errors={errors} />
+          <YesNo
+            name="conflictOfInterestPolicy"
+            label="Written conflict of interest policy? (990 Part VI, 12a)"
             errors={errors}
           />
-          <YesNo name="conflictOfInterestPolicy" label="Written conflict of interest policy? (990 Part VI, 12a)" errors={errors} />
           <YesNo name="whistleblowerPolicy" label="Written whistleblower policy? (Part VI, 13)" errors={errors} />
           <YesNo name="documentRetentionPolicy" label="Document retention policy? (Part VI, 14)" errors={errors} />
         </div>
@@ -412,7 +522,7 @@ export function ApplicationForm() {
         />
       </Step>
 
-      <Step n={9} title="Contact & certification">
+      <Step n={10} title="Contact & certification">
         <div className="grid gap-5 sm:grid-cols-2">
           <Field name="contactName" label="Contact name" errors={errors} />
           <Field name="contactTitle" label="Title" errors={errors} />
@@ -422,15 +532,17 @@ export function ApplicationForm() {
         <label className="flex items-start gap-3 text-sm">
           <input type="checkbox" name="certify" required className="mt-1" />
           <span>
-            I am authorized to submit this information on behalf of the organization, and I certify that it is
-            accurate and consistent with our most recent IRS Form 990.
+            I am authorized to submit this information on behalf of the organization, and I certify that it is accurate
+            and consistent with our most recent IRS Form 990.
           </span>
         </label>
         <Err msg={errors.certify} />
       </Step>
 
       <div className="flex flex-col items-start gap-3 sm:flex-row sm:items-center sm:justify-between">
-        <p className="text-sm text-muted">Profiles go live after our team verifies them, usually within 5 business days.</p>
+        <p className="text-sm text-muted">
+          Profiles go live after our team verifies them, usually within 5 business days.
+        </p>
         <button type="submit" disabled={submitting} className="btn-primary !px-8 !py-3 disabled:opacity-60">
           {submitting ? "Submitting…" : "Submit for review"}
         </button>

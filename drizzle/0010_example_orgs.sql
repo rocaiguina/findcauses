@@ -1,0 +1,1 @@
+ALTER TABLE "organizations" ADD COLUMN "example" boolean DEFAULT false NOT NULL;

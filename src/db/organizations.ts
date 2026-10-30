@@ -4,6 +4,7 @@ import {
   boardMembers,
   financials,
   form990Files,
+  fundingNeeds,
   impactMetrics,
   milestones,
   networkTies,
@@ -13,7 +14,7 @@ import {
 import type { Organization } from "../lib/types";
 
 // Maps between the normalized tables and the `Organization` shape the UI renders.
-// No "server-only" import here so scripts (seed) can share it.
+// No "server-only" import here so scripts can share it.
 
 export type NewOrganization = Omit<
   Organization,
@@ -47,7 +48,7 @@ export async function loadOrganizations(db: DB, where?: SQL): Promise<Organizati
   if (!rows.length) return [];
   const ids = rows.map((r) => r.org.id);
 
-  const [fin, board, track, metrics, networks, roadmap] = await Promise.all([
+  const [fin, board, track, metrics, networks, roadmap, needs] = await Promise.all([
     db
       .selectDistinctOn([financials.orgId])
       .from(financials)
@@ -58,6 +59,7 @@ export async function loadOrganizations(db: DB, where?: SQL): Promise<Organizati
     db.select().from(impactMetrics).where(inArray(impactMetrics.orgId, ids)),
     db.select().from(networkTies).where(inArray(networkTies.orgId, ids)),
     db.select().from(roadmapItems).where(inArray(roadmapItems.orgId, ids)),
+    db.select().from(fundingNeeds).where(inArray(fundingNeeds.orgId, ids)),
   ]);
 
   const finByOrg = new Map(fin.map((f) => [f.orgId, f]));
@@ -66,6 +68,7 @@ export async function loadOrganizations(db: DB, where?: SQL): Promise<Organizati
   const metricsOf = ordered(metrics);
   const networksOf = ordered(networks);
   const roadmapOf = ordered(roadmap);
+  const needsOf = ordered(needs);
 
   return rows.flatMap(({ org, form990FileName }) => {
     const f = finByOrg.get(org.id);
@@ -77,6 +80,13 @@ export async function loadOrganizations(db: DB, where?: SQL): Promise<Organizati
       impactMetrics: metricsOf(org.id).map(({ label, value }) => ({ label, value })),
       networks: networksOf(org.id).map(({ name, type, description }) => ({ name, type, description })),
       roadmap: roadmapOf(org.id).map(({ timeframe, goal, description }) => ({ timeframe, goal, description })),
+      fundingNeeds: needsOf(org.id).map(({ title, type, amount, timeframe, description }) => ({
+        title,
+        type,
+        amount,
+        timeframe,
+        description,
+      })),
     })];
   });
 }
@@ -85,7 +95,7 @@ function toOrganization(
   org: OrgRow,
   f: typeof financials.$inferSelect,
   form990FileName: string | null,
-  lists: Pick<Organization, "board" | "trackRecord" | "impactMetrics" | "networks" | "roadmap">,
+  lists: Pick<Organization, "board" | "trackRecord" | "impactMetrics" | "networks" | "roadmap" | "fundingNeeds">,
 ): Organization {
   return {
     id: org.id,
@@ -93,7 +103,6 @@ function toOrganization(
     status: org.status,
     submittedAt: org.submittedAt.toISOString(),
     reviewedAt: org.reviewedAt?.toISOString(),
-    sample: org.sample,
     name: org.name,
     tagline: org.tagline,
     ein: org.ein,
@@ -130,6 +139,8 @@ function toOrganization(
       employees: f.employees,
       volunteers: f.volunteers,
     },
+    irsRulingDate: org.irsRulingDate ?? undefined,
+    example: org.example,
     form990: form990FileName ? { fileName: form990FileName } : undefined,
     ...lists,
   };
@@ -156,7 +167,6 @@ export async function insertOrganization(db: DB, org: NewOrganization, file?: Fo
         status: org.status ?? "pending",
         submittedAt: org.submittedAt,
         reviewedAt: org.reviewedAt,
-        sample: org.sample ?? false,
         name: org.name,
         tagline: org.tagline,
         ein: org.ein,
@@ -173,6 +183,8 @@ export async function insertOrganization(db: DB, org: NewOrganization, file?: Fo
         focusAreas: org.focusAreas,
         mission: org.mission,
         ...org.stewardship,
+        irsRulingDate: org.irsRulingDate,
+        example: org.example ?? false,
       })
       .returning({ id: organizations.id });
 
@@ -184,6 +196,7 @@ export async function insertOrganization(db: DB, org: NewOrganization, file?: Fo
     if (org.impactMetrics.length) await tx.insert(impactMetrics).values(withPos(org.impactMetrics));
     if (org.networks.length) await tx.insert(networkTies).values(withPos(org.networks));
     if (org.roadmap.length) await tx.insert(roadmapItems).values(withPos(org.roadmap));
+    if (org.fundingNeeds.length) await tx.insert(fundingNeeds).values(withPos(org.fundingNeeds));
 
     if (file) {
       await tx

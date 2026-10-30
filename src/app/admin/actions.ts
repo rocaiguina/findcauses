@@ -4,7 +4,8 @@ import { revalidatePath } from "next/cache";
 import { cookies } from "next/headers";
 import { redirect } from "next/navigation";
 import { ADMIN_COOKIE, isAdminSession, sessionToken } from "@/lib/adminAuth";
-import { setStatus } from "@/lib/store";
+import { fetchRulingDate } from "@/lib/irs";
+import { getById, setStatus } from "@/lib/store";
 import type { OrgStatus } from "@/lib/types";
 
 export async function login(_prev: string | null, fd: FormData): Promise<string | null> {
@@ -31,7 +32,10 @@ export async function review(id: string, status: Extract<OrgStatus, "approved" |
   // Server actions can be posted to any route, so don't rely on the /admin middleware alone.
   if (!(await isAdminSession((await cookies()).get(ADMIN_COOKIE)?.value))) throw new Error("Unauthorized");
   if (status !== "approved" && status !== "rejected") throw new Error("Invalid status");
-  await setStatus(id, status);
+  // Best effort: record how long the IRS has recognized the organization.
+  const org = status === "approved" ? await getById(id) : undefined;
+  const rulingDate = org && !org.irsRulingDate ? await fetchRulingDate(org.ein) : undefined;
+  await setStatus(id, status, rulingDate ?? undefined);
   revalidatePath("/", "layout");
   redirect("/admin");
 }

@@ -1,25 +1,29 @@
 import type { Metadata } from "next";
 import { DirectoryBrowser } from "@/components/DirectoryBrowser";
 import { isCauseSlug } from "@/lib/causes";
-import { listApproved } from "@/lib/store";
+import { listDirectory } from "@/lib/store";
 
 export const dynamic = "force-dynamic";
 export const metadata: Metadata = { title: "Directory" };
 
-export default async function OrganizationsPage({ searchParams }: { searchParams: Promise<{ cause?: string }> }) {
-  const { cause } = await searchParams;
-  const orgs = await listApproved();
+export default async function OrganizationsPage({
+  searchParams,
+}: {
+  searchParams: Promise<{ cause?: string; q?: string }>;
+}) {
+  const { cause, q } = await searchParams;
+  const entries = await listDirectory();
+  const initialCause = cause && isCauseSlug(cause) ? cause : "";
   return (
-    <div className="container-page py-12">
-      <p className="eyebrow">Directory</p>
-      <h1 className="mt-2 font-serif text-4xl font-semibold">Mid-size nonprofits</h1>
-      <p className="mt-3 max-w-2xl text-muted">
-        Filter by cause, budget size and location. Budgets are total annual expenses from each organization&apos;s
-        latest Form 990.
-      </p>
-      <div className="mt-10">
-        <DirectoryBrowser orgs={orgs} initialCause={cause && isCauseSlug(cause) ? cause : ""} />
-      </div>
+    <div className="container-page py-6">
+      <h1 className="sr-only">Nonprofit directory</h1>
+      {/* Remount on a new top-bar search so the filters pick up the new query. */}
+      <DirectoryBrowser
+        key={`${q ?? ""}|${initialCause}`}
+        entries={entries}
+        initialCause={initialCause}
+        initialQuery={q ?? ""}
+      />
     </div>
   );
 }

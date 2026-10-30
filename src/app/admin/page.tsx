@@ -25,7 +25,7 @@ export default async function AdminPage({ searchParams }: { searchParams: Promis
       <div className="flex items-start justify-between gap-4">
         <div>
           <p className="eyebrow">Admin</p>
-          <h1 className="mt-2 font-serif text-4xl font-semibold">Review queue</h1>
+          <h1 className="mt-2 text-4xl font-semibold">Review queue</h1>
         </div>
         <form action={logout}>
           <button className="text-sm text-muted hover:text-brand">Sign out</button>

@@ -1,9 +1,9 @@
 import type { Metadata } from "next";
 import Link from "next/link";
 import { notFound } from "next/navigation";
-import { OrgCard } from "@/components/OrgCard";
+import { DirectoryBrowser } from "@/components/DirectoryBrowser";
 import { getCause } from "@/lib/causes";
-import { listApproved } from "@/lib/store";
+import { listDirectory } from "@/lib/store";
 
 export const dynamic = "force-dynamic";
 
@@ -17,26 +17,31 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
 export default async function CausePage({ params }: Props) {
   const cause = getCause((await params).slug);
   if (!cause) notFound();
-  const orgs = (await listApproved()).filter((o) => o.cause === cause.slug);
+  const entries = await listDirectory();
+  const count = entries.filter((o) => o.cause === cause.slug).length;
 
   return (
-    <div className="container-page py-12">
-      <Link href="/causes" className="text-sm text-muted hover:text-brand">
-        ← All causes
-      </Link>
-      <div className="mt-4 border-l-4 pl-5" style={{ borderColor: cause.color }}>
-        <h1 className="font-serif text-4xl font-semibold">{cause.label}</h1>
-        <p className="mt-2 max-w-2xl text-muted">{cause.blurb}</p>
+    <div className="container-page py-6">
+      <div className="card overflow-hidden">
+        <div className="h-20" style={{ background: `linear-gradient(135deg, ${cause.color}, ${cause.color}99)` }} />
+        <div className="px-6 pb-5 pt-4">
+          <Link href="/causes" className="text-sm font-semibold text-muted hover:text-brand hover:underline">
+            ← All causes
+          </Link>
+          <h1 className="mt-1 text-2xl font-semibold">{cause.label}</h1>
+          <p className="mt-1 max-w-2xl text-muted">{cause.blurb}</p>
+          <p className="mt-2 text-sm text-muted">
+            {count.toLocaleString("en-US")} {count === 1 ? "organization" : "organizations"}
+          </p>
+        </div>
       </div>
-      {orgs.length ? (
-        <div className="mt-10 grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
-          {orgs.map((o) => (
-            <OrgCard key={o.id} org={o} />
-          ))}
+      {count ? (
+        <div className="mt-4">
+          <DirectoryBrowser entries={entries} initialCause={cause.slug} />
         </div>
       ) : (
-        <div className="card mt-10 p-10 text-center">
-          <p className="font-serif text-xl">No organizations listed in this cause yet.</p>
+        <div className="card mt-4 p-10 text-center">
+          <p className="text-lg font-semibold">No organizations listed in this cause yet.</p>
           <Link href="/apply" className="btn-primary mt-4">
             List your nonprofit
           </Link>

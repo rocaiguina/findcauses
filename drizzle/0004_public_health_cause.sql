@@ -1,0 +1,1 @@
+ALTER TYPE "public"."cause" ADD VALUE 'public-health' BEFORE 'other';

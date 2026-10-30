@@ -2,11 +2,12 @@ import "server-only";
 import { isCauseSlug, type CauseSlug } from "./causes";
 import { MAX_990_BYTES, MID_SIZE_MAX_BUDGET, MID_SIZE_MIN_BUDGET, US_STATES } from "./config";
 import { moneyFull } from "./format";
-import type { Financials, Organization } from "./types";
+import { FUNDING_TYPES, type FundingType } from "./funding";
+import type { Financials, FundingNeed, Organization } from "./types";
 
 export type ApplicationErrors = Record<string, string>;
 
-type Parsed = Omit<Organization, "id" | "slug" | "status" | "submittedAt" | "reviewedAt" | "sample" | "form990">;
+type Parsed = Omit<Organization, "id" | "slug" | "status" | "submittedAt" | "reviewedAt" | "form990">;
 
 const NUMBER_FIELDS = [
   "totalRevenue",
@@ -114,6 +115,32 @@ export function parseApplication(fd: FormData): { data?: Parsed; file?: File; er
     lists[key] = clean;
   }
 
+  // Funding needs are the "job postings" funders match against.
+  let rawNeeds: unknown;
+  try {
+    rawNeeds = JSON.parse(String(fd.get("fundingNeeds") ?? "[]"));
+  } catch {
+    rawNeeds = [];
+  }
+  const fundingNeeds: FundingNeed[] = (Array.isArray(rawNeeds) ? rawNeeds : []).slice(0, 10).map((r) => {
+    const row = (r ?? {}) as Record<string, unknown>;
+    const text = (k: string) => String(row[k] ?? "").trim().slice(0, 600);
+    return {
+      title: text("title"),
+      type: text("type") as FundingType,
+      amount: Math.round(Number(String(row.amount ?? "").replace(/[$,\s]/g, ""))),
+      timeframe: text("timeframe"),
+      description: text("description"),
+    };
+  });
+  if (!fundingNeeds.length) errors.fundingNeeds = "Add at least 1 impact opportunity.";
+  else if (fundingNeeds.some((n) => !n.title || !n.timeframe || !n.description))
+    errors.fundingNeeds = "Fill in every field for each impact opportunity.";
+  else if (fundingNeeds.some((n) => !FUNDING_TYPES.some((t) => t.id === n.type)))
+    errors.fundingNeeds = "Choose a funding type for each opportunity.";
+  else if (fundingNeeds.some((n) => !Number.isFinite(n.amount) || n.amount <= 0))
+    errors.fundingNeeds = "Enter the amount sought, in dollars, for each impact opportunity.";
+
   const stewardship = {
     independentAudit: yesNo("independentAudit", "independent audit"),
     auditor: str("auditor", "Auditor (or explanation)", 300),
@@ -156,6 +183,7 @@ export function parseApplication(fd: FormData): { data?: Parsed; file?: File; er
       networks: lists.networks as Organization["networks"],
       roadmap: lists.roadmap as Organization["roadmap"],
       board: lists.board as Organization["board"],
+      fundingNeeds,
     },
   };
 }

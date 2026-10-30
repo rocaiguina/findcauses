@@ -42,6 +42,30 @@ export const CAUSES = [
     color: "#2a8a8a",
   },
   {
+    slug: "public-health",
+    label: "Public Health",
+    blurb: "Community health, HIV/AIDS, mental health, chronic disease and access to care.",
+    color: "#2e86c1",
+  },
+  {
+    slug: "education",
+    label: "Education",
+    blurb: "Schools, early childhood, literacy, tutoring, scholarships and higher education access.",
+    color: "#7b8f2a",
+  },
+  {
+    slug: "housing",
+    label: "Housing",
+    blurb: "Affordable housing development, homeownership, homelessness and shelter.",
+    color: "#8d6e4a",
+  },
+  {
+    slug: "disaster-relief",
+    label: "Disaster Relief",
+    blurb: "Hurricane and earthquake recovery, emergency response and preparedness.",
+    color: "#c0392b",
+  },
+  {
     slug: "other",
     label: "Other",
     blurb: "Missions that cross or sit outside the categories above.",

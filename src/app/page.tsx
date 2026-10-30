@@ -1,125 +1,178 @@
 import Link from "next/link";
-import { OrgCard } from "@/components/OrgCard";
+import { Avatar, ExamplePill, OrgCard } from "@/components/OrgCard";
 import { CAUSES } from "@/lib/causes";
-import { money } from "@/lib/format";
-import { listApproved } from "@/lib/store";
+import { MID_SIZE_MAX_BUDGET, MID_SIZE_MIN_BUDGET } from "@/lib/config";
+import { money, placeName } from "@/lib/format";
+import { fundingTypeLabel } from "@/lib/funding";
+import { opportunitiesFor } from "@/lib/match";
+import { listDirectory } from "@/lib/store";
+import type { DirectoryEntry } from "@/lib/types";
 
 export const dynamic = "force-dynamic";
 
-const PROFILE_SECTIONS = [
-  ["Mission & focus", "What they do, where, and the issues they work on."],
-  ["Track record", "Milestones and outcome metrics the organization stands behind."],
-  ["Networks", "Coalitions, partners and public agencies they work with."],
-  ["Roadmap", "Where they are headed over the next one to three years."],
-  ["Form 990 financials", "Budget, revenue mix, program spending, assets and staff."],
-  ["Board & stewardship", "Who governs, audits, policies and how funders are kept informed."],
+// One-click searches that go straight to a shortlist, so the value shows before any typing.
+const QUICK_SEARCHES = [
+  { label: "Education · $25K–$100K", query: "c=education&g=25k-100k&sz=mid" },
+  { label: "Public health · $100K–$500K", query: "c=public-health&g=100k-500k&sz=mid&m=990" },
+  { label: "Disaster readiness · $100K–$500K", query: "c=disaster-relief,housing&g=100k-500k" },
+  { label: "Women entrepreneurs & jobs · $100K–$500K", query: "c=economy&g=100k-500k&sz=mid" },
 ];
 
+function Stats({ entries }: { entries: DirectoryEntry[] }) {
+  const withBudget = entries.filter((e) => e.budget != null);
+  const midSize = withBudget.filter((e) => e.budget! >= MID_SIZE_MIN_BUDGET && e.budget! <= MID_SIZE_MAX_BUDGET);
+  return (
+    <div className="card p-4 text-sm">
+      <p className="font-semibold">JustCause today</p>
+      <dl className="mt-3 space-y-2">
+        {[
+          [entries.filter((e) => e.needs.length).length.toLocaleString("en-US"), "organizations with posted opportunities"],
+          [entries.length.toLocaleString("en-US"), "organizations listed"],
+          [withBudget.length.toLocaleString("en-US"), "with Form 990 financials"],
+          [midSize.length.toLocaleString("en-US"), "mid-size ($1M–$50M)"],
+        ].map(([v, l]) => (
+          <div key={l} className="flex items-baseline justify-between gap-2">
+            <dt className="text-muted">{l}</dt>
+            <dd className="font-semibold">{v}</dd>
+          </div>
+        ))}
+      </dl>
+    </div>
+  );
+}
+
 export default async function Home() {
-  const orgs = await listApproved();
-  const totalBudget = orgs.reduce((s, o) => s + o.financials.totalExpenses, 0);
-  const counts = Object.fromEntries(CAUSES.map((c) => [c.slug, orgs.filter((o) => o.cause === c.slug).length]));
+  const entries = await listDirectory();
+  const projects = entries
+    .flatMap(opportunitiesFor)
+    .filter((o) => !o.implied)
+    .slice(0, 6);
+  const suggested = entries
+    .filter((o) => o.kind === "imported" && o.budget != null && o.budget >= MID_SIZE_MIN_BUDGET && o.budget <= MID_SIZE_MAX_BUDGET)
+    .sort((a, b) => b.budget! - a.budget!)
+    .slice(0, 3);
 
   return (
-    <>
-      <section className="border-b border-line">
-        <div className="container-page grid gap-10 py-16 sm:py-24 lg:grid-cols-[1.3fr_1fr] lg:items-end">
-          <div>
-            <p className="eyebrow">For individual donors, foundations and corporate funders</p>
-            <h1 className="mt-4 font-serif text-4xl font-semibold leading-[1.1] tracking-tight sm:text-6xl">
-              Find mid-size nonprofits worth backing — and see the receipts.
+    <div className="container-page grid gap-4 py-6 lg:grid-cols-[1fr_300px]">
+      <div className="min-w-0 space-y-2">
+        <section className="card overflow-hidden">
+          <div className="px-6 py-8 sm:px-8">
+            <h1 className="max-w-2xl text-3xl font-light leading-tight text-[#8f5849] sm:text-[40px]">
+              Find impact opportunities worth funding in Puerto Rico
             </h1>
-            <p className="mt-6 max-w-xl text-lg text-muted">
-              JustCause profiles nonprofits with $1M–$50M budgets: big enough to have a track record, small enough
-              that your gift moves the needle. Every profile is built on the organization&apos;s IRS Form 990.
+            <p className="mt-4 max-w-xl text-muted">
+              Answer 5 quick questions. Get a shortlist of 6 impact opportunities that fit what you fund, with the reasons
+              and the IRS numbers behind each one. Then reach the people on LinkedIn.
             </p>
-            <div className="mt-8 flex flex-wrap gap-3">
-              <Link href="/organizations" className="btn-primary">
-                Browse the directory
+            <div className="mt-6 flex flex-wrap items-center gap-3">
+              <Link href="/find" className="btn-primary !px-6 !py-3 !text-base">
+                Find impact opportunities
               </Link>
-              <Link href="/apply" className="btn-ghost">
-                I run a nonprofit
-              </Link>
+              <span className="text-sm text-muted">About a minute · no account</span>
+            </div>
+            <div className="mt-6">
+              <p className="text-xs font-semibold text-muted">Or try a ready-made search</p>
+              <div className="mt-2 flex flex-wrap gap-2">
+                {QUICK_SEARCHES.map((q) => (
+                  <Link
+                    key={q.query}
+                    href={`/opportunities?${q.query}`}
+                    className="inline-flex rounded-full border border-[#666] px-3 py-1 text-sm font-semibold text-muted hover:bg-black/5 hover:text-ink"
+                  >
+                    {q.label}
+                  </Link>
+                ))}
+              </div>
             </div>
           </div>
-          <dl className="grid grid-cols-3 gap-4 lg:grid-cols-1">
-            {[
-              [String(orgs.length), "Organizations listed"],
-              [money(totalBudget), "Combined annual budgets"],
-              [String(CAUSES.length), "Cause areas"],
-            ].map(([v, l]) => (
-              <div key={l} className="border-l-2 border-accent pl-3 sm:pl-4">
-                <dd className="font-serif text-2xl font-semibold sm:text-4xl">{v}</dd>
-                <dt className="text-sm text-muted">{l}</dt>
-              </div>
-            ))}
-          </dl>
-        </div>
-      </section>
+        </section>
 
-      <section className="container-page py-16">
-        <div className="flex items-end justify-between gap-4">
-          <h2 className="font-serif text-3xl font-semibold">Browse by cause</h2>
-          <Link href="/causes" className="text-sm font-medium text-brand hover:underline">
-            All causes →
-          </Link>
-        </div>
-        <div className="mt-6 grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
-          {CAUSES.map((c) => (
+        {projects.length > 0 && (
+          <section className="card overflow-hidden">
+            <div className="px-4 pt-4">
+              <h2 className="section-title">Impact opportunities seeking funding</h2>
+              <p className="text-sm text-muted">Posted by nonprofits, like job listings</p>
+            </div>
+            <ul className="mt-2 divide-y divide-line">
+              {projects.map((opp) => (
+                <li key={opp.key} className="flex gap-3 px-4 py-3">
+                  <Avatar name={opp.entry.name} cause={opp.entry.cause} size={48} />
+                  <div className="min-w-0 flex-1">
+                    <Link href={opp.entry.href} className="font-semibold text-brand hover:underline">
+                      {opp.title}
+                    </Link>
+                    <p className="text-sm">{opp.entry.name}</p>
+                    <p className="text-xs text-muted">
+                      {[opp.entry.city, placeName(opp.entry.state)].filter(Boolean).join(", ")} ·{" "}
+                      {opp.amount != null ? money(opp.amount) : "Amount not posted"} · {fundingTypeLabel(opp.type)}
+                    </p>
+                  </div>
+                  <div className="shrink-0">{opp.entry.example ? <ExamplePill /> : null}</div>
+                </li>
+              ))}
+            </ul>
             <Link
-              key={c.slug}
-              href={`/causes/${c.slug}`}
-              className="card group relative overflow-hidden p-5 hover:border-transparent"
+              href="/find"
+              className="block border-t border-line py-3 text-center text-sm font-semibold text-muted hover:bg-black/5 hover:text-ink"
             >
-              <span className="absolute inset-x-0 top-0 h-1" style={{ backgroundColor: c.color }} />
-              <div className="flex items-baseline justify-between">
-                <h3 className="font-serif text-lg font-semibold group-hover:underline">{c.label}</h3>
-                <span className="text-sm text-muted">{counts[c.slug]}</span>
-              </div>
-              <p className="mt-2 text-sm text-muted">{c.blurb}</p>
+              Find the ones that fit you →
             </Link>
-          ))}
-        </div>
-      </section>
+          </section>
+        )}
 
-      <section className="border-y border-line bg-card">
-        <div className="container-page grid gap-10 py-16 lg:grid-cols-[1fr_2fr]">
-          <div>
-            <p className="eyebrow">What every profile includes</p>
-            <h2 className="mt-3 font-serif text-3xl font-semibold">The due diligence, done up front.</h2>
-            <p className="mt-4 text-muted">
-              Nonprofits can&apos;t be listed until they answer every section and upload their latest 990. Our team
-              checks the figures against the filing before a profile goes live.
-            </p>
+        <section className="card px-4 py-4">
+          <div className="flex items-end justify-between gap-4">
+            <div>
+              <h2 className="section-title">Mid-size nonprofits to know</h2>
+              <p className="text-sm text-muted">From public directories, with IRS Form 990 figures</p>
+            </div>
+            <Link href="/organizations" className="text-sm font-semibold text-muted hover:text-brand hover:underline">
+              See all
+            </Link>
           </div>
-          <ol className="grid gap-px overflow-hidden rounded-2xl border border-line bg-line sm:grid-cols-2">
-            {PROFILE_SECTIONS.map(([title, body], i) => (
-              <li key={title} className="bg-card p-5">
-                <span className="font-serif text-sm text-accent">0{i + 1}</span>
-                <h3 className="mt-1 font-semibold">{title}</h3>
-                <p className="mt-1 text-sm text-muted">{body}</p>
-              </li>
+          <div className="mt-3 grid gap-2 sm:grid-cols-3">
+            {suggested.map((o) => (
+              <OrgCard key={`${o.kind}-${o.id}`} entry={o} />
             ))}
-          </ol>
-        </div>
-      </section>
+          </div>
+        </section>
 
-      <section className="container-page py-16">
-        <div className="flex items-end justify-between gap-4">
-          <h2 className="font-serif text-3xl font-semibold">Recently listed</h2>
-          <Link href="/organizations" className="text-sm font-medium text-brand hover:underline">
-            Full directory →
+        <section className="card px-4 py-4">
+          <h2 className="section-title">Browse by cause</h2>
+          <div className="mt-3 flex flex-wrap gap-2">
+            {CAUSES.map((c) => (
+              <Link
+                key={c.slug}
+                href={`/causes/${c.slug}`}
+                className="inline-flex items-center gap-1.5 rounded-full border border-[#666] px-3 py-1 text-sm font-semibold text-muted hover:bg-black/5 hover:text-ink"
+              >
+                <span className="h-2 w-2 rounded-full" style={{ backgroundColor: c.color }} />
+                {c.label}
+                <span className="text-xs font-normal">{entries.filter((e) => e.cause === c.slug).length}</span>
+              </Link>
+            ))}
+          </div>
+        </section>
+      </div>
+      <aside className="space-y-2">
+        <Stats entries={entries} />
+        <div className="card p-4 text-sm">
+          <p className="font-semibold">Run a nonprofit?</p>
+          <p className="mt-1 text-muted">
+            Post the impact opportunities you&apos;re raising money for. Funders find them through their shortlists.
+          </p>
+          <Link href="/apply" className="btn-ghost mt-3 w-full">
+            Post your opportunities
           </Link>
         </div>
-        <div className="mt-6 grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
-          {[...orgs]
-            .sort((a, b) => (b.reviewedAt ?? "").localeCompare(a.reviewedAt ?? ""))
-            .slice(0, 6)
-            .map((o) => (
-              <OrgCard key={o.id} org={o} />
-            ))}
+        <div className="card p-4 text-xs text-muted">
+          <ExamplePill />
+          <p className="mt-2">
+            Organizations marked <span className="font-semibold">Example</span> are fictional, added so you can see the
+            flow before nonprofits post real opportunities.
+          </p>
         </div>
-      </section>
-    </>
+      </aside>
+    </div>
   );
 }

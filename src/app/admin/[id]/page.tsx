@@ -1,8 +1,9 @@
 import Link from "next/link";
 import { notFound } from "next/navigation";
 import { review } from "../actions";
+import { FundingOpportunities } from "@/components/OrgMatching";
 import { OrgProfile } from "@/components/OrgProfile";
-import { getById } from "@/lib/store";
+import { getById, profileEntry } from "@/lib/store";
 
 export const dynamic = "force-dynamic";
 
@@ -37,7 +38,11 @@ export default async function AdminReviewPage({ params }: { params: Promise<{ id
           </div>
         </div>
       </div>
-      <OrgProfile org={org} form990Href={org.form990 ? `/admin/${org.id}/990` : undefined} />
+      <OrgProfile
+        org={org}
+        form990Href={org.form990 ? `/admin/${org.id}/990` : undefined}
+        opportunities={<FundingOpportunities entry={profileEntry(org)} />}
+      />
     </>
   );
 }

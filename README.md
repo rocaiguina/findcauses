@@ -4,8 +4,9 @@ A directory of mid-size U.S. nonprofits ($1M–$50M in annual expenses per Form 
 individual donors, foundations and corporate givers.
 
 Each profile covers mission and focus areas, impact metrics, track record, networks, roadmap, Form 990
-financials, board of directors and stewardship. Organizations are grouped into eight causes: Climate Change,
-Economy, Fiscal Policy, Civil Rights, Energy & Infrastructure, Arts & Culture, Recreation & Sports, and Other.
+financials, board of directors and stewardship. Organizations are grouped into twelve causes: Climate Change,
+Economy, Fiscal Policy, Civil Rights, Energy & Infrastructure, Arts & Culture, Recreation & Sports, Public Health,
+Education, Housing, Disaster Relief, and Other (see `src/lib/causes.ts`).
 
 ## Running locally
 
@@ -16,7 +17,6 @@ npm install
 createdb justcause
 cp .env.example .env.local   # then set DATABASE_URL and ADMIN_PASSWORD
 npm run db:migrate           # create tables
-npm run seed                 # 10 fictional sample organizations (marked "Sample")
 npm run dev
 ```
 
@@ -39,8 +39,59 @@ reapply. Deleting an organization cascades to all of its rows.
 npm run db:generate   # after editing schema.ts — writes a new migration
 npm run db:migrate    # apply pending migrations
 npm run db:studio     # browse data
-npm run seed -- --force   # replace sample orgs (real submissions are never touched)
 ```
+
+## Imported listings (development only)
+
+To have real organizations to work with, the directory also shows **unclaimed listings** imported from
+two Puerto Rico directories, the
+[Pecunia Group directory](https://pecuniagroup.com/es/directorio-osfl/) and the
+[Observatorio de Datos](https://observatoriodedatos.org/directorio-entidades). Each listing is enriched
+with Form 990 summary figures from IRS data via
+[ProPublica Nonprofit Explorer](https://projects.propublica.org/nonprofits/api).
+
+They live in their own tables (`imported_orgs`, `irs_filings`), appear with an "Unclaimed" badge and a
+dashed card, and link to `/listings/[slug]`. Source snapshots and the ProPublica response cache are in
+`data/imports/` (gitignored).
+
+```bash
+npm run imports:load     # load data/imports/*.json into imported_orgs (safe to re-run)
+npm run imports:enrich   # match names to IRS records and store 990 figures (cached; add -- --recheck to redo)
+npm run imports:categorize  # re-sort listings into the causes after changing rules in src/lib/imports.ts
+npm run imports:clear    # remove all imported listings and IRS rows — run before production
+```
+
+Causes are assigned best-effort: the IRS NTEE code when it maps to one of the causes, otherwise keywords
+in the name (Spanish and English), otherwise the source's tags. Human-services organizations
+(shelters, elder care, food banks), which fit none of the causes, stay in "Other". Listings with no IRS figures show "990 not available yet".
+
+**Budgets** on imported listings are total functional expenses (Form 990 Part IX line 25, or 990-EZ line 17)
+from the most recent filing in ProPublica's data. Each listing links to its ProPublica record to verify.
+
+Name matching is conservative: a listing gets financials only when its normalized name scores ≥ 90 against
+an IRS record in Puerto Rico and clearly beats any other candidate. Matches should still be spot-checked.
+
+## Funders: five questions, a shortlist of six
+
+Funders don't keep a profile. Someone tasked with finding what to fund in Puerto Rico answers five quick
+questions at `/find` and immediately gets a shortlist of 6 **impact opportunities**: what nonprofits are
+raising money for, posted the way companies post jobs. Each comes with the reasons it fits and links to find
+the organization and its people on LinkedIn, where the conversation continues.
+
+- The answers live in the URL (`/opportunities?c=education,public-health&g=100k-500k&m=990`), so a shortlist
+  can be bookmarked or shared with colleagues, and downloaded as CSV for an internal memo.
+- Subscribing is optional: an email and the saved search go in `subscriptions`. **Sending the emails is not
+  built yet.**
+- `src/lib/match.ts` scores each opportunity (cause, place, organization size, gift fit, type of funding,
+  must-haves); `src/lib/shortlist.ts` keeps one per organization, ranks posted opportunities ahead of
+  organizations that haven't posted one, and returns the top 6.
+
+### Example data
+
+`npm run examples:load` adds 8 **fictional** organizations with 12 impact opportunities so the flow can be
+demoed; they're labeled "Example" everywhere. `npm run examples:clear` removes them. Examples use fictional
+organizations on purpose: attaching made-up asks to real nonprofits would send funders after requests that
+don't exist.
 
 ## How it works
 
@@ -52,6 +103,9 @@ npm run seed -- --force   # replace sample orgs (real submissions are never touc
 | `/causes`, `/causes/[slug]` | Browse by cause |
 | `/apply` | Nonprofit application — every section required, plus a 990 PDF upload |
 | `/admin` | Password-protected review queue: preview, approve or reject submissions |
+| `/find` | Five quick questions for funders (causes, gift size, funding type, organization size, must-haves) |
+| `/opportunities` | The shortlist: the 6 impact opportunities that fit best, why, and LinkedIn links to reach the people; `/opportunities/export` downloads it as CSV |
+| `/listings/[slug]` | Unclaimed (imported) listing profile |
 
 Submissions are validated server-side (EIN format, $1M–$50M budget band, functional expenses summing to the
 total, minimum board/track record/roadmap entries, real PDF) and stored as `pending` until approved.

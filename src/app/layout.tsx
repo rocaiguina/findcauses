@@ -1,10 +1,7 @@
 import type { Metadata } from "next";
 import Link from "next/link";
-import { Fraunces, Inter } from "next/font/google";
+import { TopNav } from "@/components/TopNav";
 import "./globals.css";
-
-const inter = Inter({ variable: "--font-inter", subsets: ["latin"] });
-const fraunces = Fraunces({ variable: "--font-fraunces", subsets: ["latin"] });
 
 export const metadata: Metadata = {
   title: { default: "JustCause — Mid-size nonprofits, funder-ready", template: "%s · JustCause" },
@@ -15,34 +12,25 @@ export const metadata: Metadata = {
 export default function RootLayout({ children }: Readonly<{ children: React.ReactNode }>) {
   return (
     <html lang="en">
-      <body className={`${inter.variable} ${fraunces.variable} flex min-h-screen flex-col font-sans antialiased`}>
-        <header className="border-b border-line bg-paper/90 backdrop-blur sticky top-0 z-20">
-          <div className="container-page flex h-16 items-center justify-between gap-4">
-            <Link href="/" className="font-serif text-2xl font-semibold tracking-tight text-brand">
-              Just<span className="text-accent">Cause</span>
-            </Link>
-            <nav className="flex items-center gap-1 text-sm sm:gap-4">
-              <Link href="/organizations" className="rounded-full px-3 py-2 hover:text-brand">
-                Directory
-              </Link>
-              <Link href="/causes" className="hidden rounded-full px-3 py-2 hover:text-brand sm:inline">
-                Causes
-              </Link>
-              <Link href="/apply" className="btn-primary whitespace-nowrap !px-4 !py-2">
-                <span className="sm:hidden">Get listed</span>
-                <span className="hidden sm:inline">List your nonprofit</span>
-              </Link>
-            </nav>
-          </div>
-        </header>
+      <body className="flex min-h-screen flex-col font-sans antialiased">
+        <TopNav />
         <main className="flex-1">{children}</main>
-        <footer className="mt-20 border-t border-line">
-          <div className="container-page flex flex-col gap-2 py-8 text-sm text-muted sm:flex-row sm:justify-between">
-            <p>
-              <span className="font-serif font-semibold text-brand">JustCause</span> — helping funders find
-              mid-size nonprofits doing serious work.
-            </p>
-            <p>Financial data is self-reported from each organization&apos;s IRS Form 990.</p>
+        <footer className="mt-12 pb-8">
+          <div className="container-page flex flex-wrap items-center justify-center gap-x-4 gap-y-1 text-xs text-muted">
+            <span>
+              <span className="font-bold text-brand">Just</span>
+              <span className="font-bold text-ink">Cause</span> © {new Date().getFullYear()}
+            </span>
+            <Link href="/organizations" className="hover:text-brand hover:underline">
+              Directory
+            </Link>
+            <Link href="/causes" className="hover:text-brand hover:underline">
+              Causes
+            </Link>
+            <Link href="/apply" className="hover:text-brand hover:underline">
+              List your nonprofit
+            </Link>
+            <span>Financial data from IRS Form 990 filings</span>
           </div>
         </footer>
       </body>

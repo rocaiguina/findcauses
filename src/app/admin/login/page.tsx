@@ -7,7 +7,7 @@ export default async function LoginPage({ searchParams }: { searchParams: Promis
   const { next } = await searchParams;
   return (
     <div className="container-page max-w-sm py-20">
-      <h1 className="font-serif text-3xl font-semibold">Admin sign in</h1>
+      <h1 className="text-3xl font-semibold">Admin sign in</h1>
       <p className="mt-2 text-sm text-muted">Review and publish nonprofit applications.</p>
       <LoginForm next={next ?? "/admin"} />
     </div>
