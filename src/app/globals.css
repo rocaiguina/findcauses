@@ -1,58 +1,62 @@
 @import "tailwindcss";
 
-/* Professional-network look: warm gray canvas, white cards, blue actions, system type. */
+/* Calm and airy: near-white canvas, hairline dividers, slate text, periwinkle actions, regular-weight type. */
 @theme inline {
-  --color-ink: #191919;
-  --color-muted: #666666;
-  --color-paper: #f4f2ee;
+  --color-ink: #1e1e2a;
+  --color-muted: #6b6b7e;
+  --color-paper: #fbfbfd;
   --color-card: #ffffff;
-  --color-line: #e0dfdc;
-  --color-brand: #0a66c2;
-  --color-brand-dark: #004182;
-  --color-brand-soft: #e8f1fb;
-  --color-accent: #915907;
-  --color-success: #057642;
-  --font-sans: -apple-system, system-ui, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", "Fira Sans",
-    Ubuntu, Oxygen, Cantarell, "Droid Sans", sans-serif;
+  --color-line: #e7e7ef;
+  --color-brand: #5266eb;
+  --color-brand-dark: #3d4fd1;
+  --color-brand-soft: #eef0fe;
+  --color-accent: #9a6b1f;
+  --color-success: #2f8a66;
+  --color-navy: #1d1e2c;
+  --font-sans: var(--font-inter), -apple-system, system-ui, "Segoe UI", Roboto, "Helvetica Neue", sans-serif;
 }
 
 body {
   background: var(--color-paper);
   color: var(--color-ink);
+  letter-spacing: -0.005em;
 }
 
 @utility container-page {
-  @apply mx-auto w-full max-w-[1128px] px-4 sm:px-6;
+  @apply mx-auto w-full max-w-[1180px] px-4 sm:px-6;
 }
 @utility btn {
-  @apply inline-flex min-h-8 items-center justify-center gap-1.5 rounded-full px-4 py-1.5 text-sm font-semibold transition-colors;
+  @apply inline-flex min-h-9 items-center justify-center gap-1.5 rounded-full px-5 py-2 text-sm font-medium transition-colors;
 }
 @utility btn-primary {
   @apply btn bg-brand text-white hover:bg-brand-dark;
 }
 @utility btn-ghost {
-  @apply btn border border-brand bg-card text-brand shadow-[inset_0_0_0_0.5px_var(--color-brand)] hover:bg-brand-soft hover:shadow-[inset_0_0_0_1px_var(--color-brand)];
+  @apply btn border border-line bg-card text-ink hover:border-ink/40;
 }
 @utility btn-muted {
-  @apply btn border border-[#666] bg-card text-muted hover:bg-black/5 hover:text-ink;
+  @apply btn border border-transparent bg-black/[0.04] text-ink hover:bg-black/[0.07];
 }
 @utility card {
-  @apply rounded-lg bg-card shadow-[0_0_0_1px_rgb(140_140_140/0.2)];
+  @apply rounded-xl border border-line bg-card;
 }
 @utility eyebrow {
-  @apply text-sm font-normal text-muted;
+  @apply text-xs font-medium uppercase tracking-[0.14em] text-muted;
 }
 @utility field-label {
   @apply mb-1 block text-sm font-normal text-muted;
 }
 @utility field {
-  @apply w-full rounded border border-[#8c8c8c] bg-white px-3 py-1.5 text-sm outline-none hover:shadow-[inset_0_0_0_1px_#191919] focus:border-brand focus:shadow-[inset_0_0_0_1px_var(--color-brand)];
+  @apply w-full rounded-lg border border-line bg-white px-3 py-2 text-sm outline-none transition-colors hover:border-ink/30 focus:border-brand focus:ring-2 focus:ring-brand/15;
 }
 @utility chip {
-  @apply inline-flex items-center rounded-full border border-[#8c8c8c] bg-card px-3 py-0.5 text-xs font-semibold text-muted;
+  @apply inline-flex items-center rounded-full border border-line bg-card px-3 py-0.5 text-xs font-medium text-muted;
 }
 @utility section-title {
-  @apply text-xl font-semibold text-ink;
+  @apply text-lg font-medium text-ink;
+}
+@utility text-link {
+  @apply underline decoration-ink/30 underline-offset-4 transition-colors hover:decoration-ink;
 }
 
 /* Printing the shortlist gives a clean briefing memo: no navigation, buttons or shadows. */

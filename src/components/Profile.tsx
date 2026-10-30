@@ -42,7 +42,10 @@ export function ProfileTopCard({
     <section className="card overflow-hidden">
       <div
         className="h-24 sm:h-36"
-        style={{ background: `linear-gradient(120deg, ${color} 0%, ${color}bb 55%, ${color}55 100%)` }}
+        style={{
+          // Soft neutral halo with a faint hint of the cause color.
+          background: `radial-gradient(120% 140% at 85% 120%, ${color}22 0%, #e6e7ea 35%, #f4f4f2 60%, #eceef3 100%)`,
+        }}
       />
       <div className="px-4 pb-5 sm:px-6">
         <div className="-mt-12 sm:-mt-16">

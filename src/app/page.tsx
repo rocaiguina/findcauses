@@ -1,5 +1,6 @@
 import Link from "next/link";
-import { Avatar, ExamplePill } from "@/components/OrgCard";
+import { RingsArtwork } from "@/components/Artwork";
+import { ExamplePill } from "@/components/OrgCard";
 import { SaveButton } from "@/components/Save";
 import { MID_SIZE_MAX_BUDGET, MID_SIZE_MIN_BUDGET } from "@/lib/config";
 import { money, placeName } from "@/lib/format";
@@ -20,62 +21,67 @@ export default async function Home() {
     .slice(0, 6);
 
   return (
-    <div className="container-page max-w-3xl space-y-3 py-8">
-      <section className="card px-6 py-8 sm:px-10">
-        <h1 className="text-3xl font-semibold leading-tight sm:text-4xl">Find Puerto Rico nonprofits worth funding</h1>
-        <p className="mt-3 text-muted">
-          Search, or answer 4 quick questions. Save the ones you like to a shortlist you can share.
-        </p>
-        <form action="/organizations" className="mt-6 flex gap-2">
-          <input
-            name="q"
-            aria-label="Search nonprofits"
-            placeholder="Organization, issue or town"
-            className="field !rounded-full !px-4 !py-2.5 !text-base"
-          />
-          <button className="btn-ghost shrink-0 !px-5">Search</button>
-        </form>
-        <div className="mt-4 flex items-center gap-3">
-          <Link href="/find" className="btn-primary !px-6 !py-2.5 !text-base">
-            Answer 4 quick questions
-          </Link>
-          <span className="text-sm text-muted">No account needed</span>
+    <div className="container-page py-10 sm:py-16">
+      <section className="grid items-center gap-10 md:grid-cols-[1.1fr_1fr] md:gap-16">
+        <div>
+          <h1 className="text-[34px] font-normal leading-[1.12] tracking-[-0.02em] sm:text-5xl">
+            Find Puerto Rico nonprofits worth funding.
+          </h1>
+          <p className="mt-5 max-w-md text-lg text-muted">
+            Search, or answer 4 quick questions. Save the ones you like to a shortlist you can share.
+          </p>
+          <form action="/organizations" className="mt-8 flex max-w-md gap-2">
+            <input
+              name="q"
+              aria-label="Search nonprofits"
+              placeholder="Organization, issue or town"
+              className="field !rounded-full !px-4 !py-2.5 !text-base"
+            />
+            <button className="btn-ghost shrink-0">Search</button>
+          </form>
+          <div className="mt-4 flex items-center gap-4">
+            <Link href="/find" className="btn-primary !px-6 !py-2.5 !text-base">
+              Find matches
+            </Link>
+            <Link href="/opportunities" className="text-link text-[15px]">
+              Browse opportunities
+            </Link>
+          </div>
         </div>
+        <RingsArtwork className="mx-auto w-full max-w-[460px] rounded-2xl" />
       </section>
 
       {seeking.length > 0 && (
-        <section className="card overflow-hidden">
-          <h2 className="px-5 pt-4 text-base font-semibold">Seeking funding now</h2>
-          <ul className="mt-1 divide-y divide-line">
+        <section className="mx-auto mt-16 max-w-3xl sm:mt-24">
+          <h2 className="text-2xl font-normal tracking-[-0.01em]">Seeking funding now</h2>
+          <ul className="mt-5 border-t border-ink/80">
             {seeking.map((opp) => {
               const e = opp.entry;
               return (
-                <li key={opp.key} className="flex items-center gap-3 px-5 py-3">
-                  <Avatar name={e.name} cause={e.cause} size={40} />
+                <li key={opp.key} className="flex items-start gap-3 border-b border-line py-4">
+                  <span className="mt-2 h-1.5 w-1.5 shrink-0 rounded-full bg-brand" aria-hidden />
                   <div className="min-w-0 flex-1">
-                    <Link href={e.href} className="font-semibold text-brand hover:underline">
-                      {opp.title}
-                    </Link>
-                    <p className="truncate text-sm text-muted">
+                    <div className="flex flex-wrap items-center gap-2">
+                      <Link href={e.href} className="text-[15px] font-medium hover:text-brand">
+                        {opp.title}
+                      </Link>
+                      {isExample(opp) && <ExamplePill title={e.example ? undefined : ADDED_BY_JUSTCAUSE} />}
+                    </div>
+                    <p className="text-sm text-muted">
                       {e.name} · {[e.city, placeName(e.state)].filter(Boolean).join(", ")} ·{" "}
                       {opp.amount != null ? money(opp.amount) : "Amount not posted"} · {fundingTypeLabel(opp.type)}
                     </p>
                   </div>
-                  {isExample(opp) && <ExamplePill title={e.example ? undefined : ADDED_BY_JUSTCAUSE} />}
                   <SaveButton entryKey={`${e.kind}-${e.id}`} compact />
                 </li>
               );
             })}
           </ul>
+          <Link href="/opportunities" className="text-link mt-5 inline-block text-[15px]">
+            See all impact opportunities
+          </Link>
         </section>
       )}
-
-      <p className="text-center text-sm text-muted">
-        Run a nonprofit?{" "}
-        <Link href="/apply" className="font-semibold text-brand hover:underline">
-          Post your impact opportunities
-        </Link>
-      </p>
     </div>
   );
 }

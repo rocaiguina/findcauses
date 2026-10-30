@@ -96,7 +96,7 @@ export function MatchCta() {
     <div className="card p-4">
       <p className="font-semibold">Looking for impact opportunities?</p>
       <p className="mt-1 text-sm text-muted">
-        Answer 5 quick questions and get a shortlist of 6 that fit, with why. No account needed.
+        Answer 4 quick questions and get your best matches, with why. No account needed.
       </p>
       <Link href="/find" className="btn-primary mt-3 w-full">
         Find impact opportunities
