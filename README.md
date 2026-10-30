@@ -93,6 +93,29 @@ demoed; they're labeled "Example" everywhere. `npm run examples:clear` removes t
 organizations on purpose: attaching made-up asks to real nonprofits would send funders after requests that
 don't exist.
 
+## Deploying (Netlify)
+
+Live at https://justcause-pr.netlify.app (Netlify site `justcause-pr`).
+
+There is no hosted database yet, so the deployed site runs on a **JSON snapshot** of the directory
+(`DATA_SOURCE=snapshot` is set in Netlify's environment):
+
+- Pages read `data/snapshot.json`, exported from your local Postgres. It is gitignored and bundled at build
+  time, so **deploy from your machine**, not from GitHub:
+
+  ```bash
+  npm run snapshot:export
+  npx netlify-cli deploy --prod
+  ```
+
+- Nonprofit applications (with their 990 PDF) and email subscriptions are saved as JSON in Netlify Blobs
+  (stores `applications` and `subscriptions`). `/admin` lists applications read-only; approving needs a database.
+- `ADMIN_PASSWORD` is set in Netlify's environment. View it with `npx netlify-cli env:get ADMIN_PASSWORD`.
+- Netlify functions accept request bodies up to about 6 MB, so larger 990 PDFs fail to upload on the live site.
+
+To switch to a hosted Postgres later, set `DATABASE_URL` in Netlify, remove `DATA_SOURCE`, and run the
+migrations and data load against it.
+
 ## How it works
 
 | Route | Purpose |
