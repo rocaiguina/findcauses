@@ -1,22 +1,24 @@
-// JustCause mark: two overlapping rings (a cause and a funder meeting) inside a circle. The funder's ring
-// carries the brand color, as the funder's ribbon does in the home animation.
+import { knotStrands } from "@/lib/knot";
 
-export function LogoMark({ size = 28, className = "" }: { size?: number; className?: string }) {
+// JustCause mark: the knot from the home animation, at rest. Same strands and colors, with fewer turns so it
+// stays legible at small sizes.
+const MARK = knotStrands({ cx: 16, cy: 16, entryRadius: 15.5, maxRadius: 11.5, turns: 1.1, approachSteps: 6, knotSteps: 36 });
+
+export function LogoMark({ size = 34, className = "" }: { size?: number; className?: string }) {
   return (
     <svg
       width={size}
       height={size}
       viewBox="0 0 32 32"
       fill="none"
-      stroke="currentColor"
-      strokeWidth="1.5"
+      strokeLinecap="round"
+      strokeLinejoin="round"
       className={className}
       aria-hidden
     >
-      <circle cx="16" cy="16" r="14.5" />
-      <circle cx="12.5" cy="16" r="6.5" />
-      <circle cx="19.5" cy="16" r="6.5" stroke="#5266eb" />
-      <circle cx="16" cy="16" r="1.6" fill="currentColor" stroke="none" />
+      {MARK.map((s) => (
+        <path key={s.color} d={s.d} stroke={s.color} strokeWidth="0.95" />
+      ))}
     </svg>
   );
 }
