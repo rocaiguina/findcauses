@@ -80,3 +80,36 @@ body {
     border: 1px solid #ddd;
   }
 }
+
+/* Home artwork: a striped ribbon draws itself along its path, then wipes away from the tail. Each band uses
+   pathLength="1", so the dash pattern is a 0.62-long visible stroke followed by a gap longer than the path.
+   The path starts and ends below the canvas, so the ribbon enters and leaves out of view. */
+.ribbon-band {
+  stroke-dasharray: 0.62 1.6;
+  stroke-dashoffset: 0.62;
+  animation: ribbon-draw 6.5s cubic-bezier(0.35, 0.1, 0.65, 0.9) infinite;
+  /* Start mid-stroke so the canvas isn't empty on page load. */
+  animation-delay: -2.2s;
+}
+@keyframes ribbon-draw {
+  from {
+    stroke-dashoffset: 0.62;
+  }
+  to {
+    stroke-dashoffset: -1;
+  }
+}
+@media (prefers-reduced-motion: reduce) {
+  .ribbon-band {
+    animation: none;
+    stroke-dasharray: none;
+  }
+}
+
+/* Quiet filter pills: outlined, and filled dark when active. */
+@utility pill {
+  @apply inline-flex shrink-0 items-center gap-1.5 rounded-full border border-line bg-card px-3.5 py-1.5 text-sm text-ink/80 transition-colors hover:border-ink/40 hover:text-ink;
+}
+@utility pill-on {
+  @apply inline-flex shrink-0 items-center gap-1.5 rounded-full border border-ink bg-ink px-3.5 py-1.5 text-sm text-white;
+}

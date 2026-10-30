@@ -1,5 +1,5 @@
 import Link from "next/link";
-import { RingsArtwork } from "@/components/Artwork";
+import { RibbonArtwork } from "@/components/Artwork";
 import { ExamplePill } from "@/components/OrgCard";
 import { SaveButton } from "@/components/Save";
 import { MID_SIZE_MAX_BUDGET, MID_SIZE_MIN_BUDGET } from "@/lib/config";
@@ -48,7 +48,7 @@ export default async function Home() {
             </Link>
           </div>
         </div>
-        <RingsArtwork className="mx-auto w-full max-w-[460px] rounded-2xl" />
+        <RibbonArtwork className="mx-auto aspect-[5/4] w-full max-w-[520px]" />
       </section>
 
       {seeking.length > 0 && (

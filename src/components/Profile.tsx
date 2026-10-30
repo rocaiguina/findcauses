@@ -49,7 +49,7 @@ export function ProfileTopCard({
       />
       <div className="px-4 pb-5 sm:px-6">
         <div className="-mt-12 sm:-mt-16">
-          <span className="inline-block rounded-lg bg-card p-1 shadow-sm">
+          <span className="inline-block rounded-full bg-card p-1 shadow-sm">
             <span className="hidden sm:block">
               <Avatar name={name} cause={cause} size={120} />
             </span>

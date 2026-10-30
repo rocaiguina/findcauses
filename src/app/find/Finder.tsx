@@ -15,9 +15,7 @@ function Pill({ on, onClick, children, disabled }: { on: boolean; onClick: () =>
       aria-pressed={on}
       disabled={disabled}
       onClick={onClick}
-      className={`inline-flex items-center gap-1.5 rounded-full border px-4 py-2 text-sm font-semibold transition-colors disabled:opacity-40 ${
-        on ? "border-success bg-success text-white" : "border-[#666] bg-card text-muted hover:bg-black/5 hover:text-ink"
-      }`}
+      className={`${on ? "pill-on" : "pill"} !px-4 !py-2 disabled:opacity-40`}
     >
       {on && <span aria-hidden>✓</span>}
       {children}
@@ -32,7 +30,7 @@ function Choice({ on, onClick, title, help }: { on: boolean; onClick: () => void
       aria-pressed={on}
       onClick={onClick}
       className={`w-full rounded-lg border px-4 py-3 text-left transition-colors hover:bg-black/[0.03] ${
-        on ? "border-success shadow-[inset_0_0_0_1px_var(--color-success)]" : "border-line"
+        on ? "border-ink shadow-[inset_0_0_0_1px_var(--color-ink)]" : "border-line"
       }`}
     >
       <span className="block font-semibold">{title}</span>
@@ -60,7 +58,7 @@ export function Finder({ initial }: { initial: Criteria }) {
   return (
     <div className="card overflow-hidden">
       <div className="h-1 bg-line">
-        <div className="h-full bg-success transition-all" style={{ width: `${(step / STEPS) * 100}%` }} />
+        <div className="h-full bg-brand transition-all" style={{ width: `${(step / STEPS) * 100}%` }} />
       </div>
       <div className="px-5 py-6 sm:px-8">
         <p className="text-xs font-semibold text-muted">

@@ -52,14 +52,14 @@ export function initials(name: string): string {
   return (words.length > 1 ? words[0][0] + words[1][0] : (words[0] ?? "?").slice(0, 2)).toUpperCase();
 }
 
-/** Square monogram in the cause color, standing in for an organization's logo. */
+/** Round monogram tinted with the cause color, standing in for an organization's logo. */
 export function Avatar({ name, cause, size = 56 }: { name: string; cause: string; size?: number }) {
   const color = getCause(cause)?.color ?? "#666";
   return (
     <span
       aria-hidden
-      className="flex shrink-0 items-center justify-center rounded-md font-semibold text-white"
-      style={{ width: size, height: size, backgroundColor: color, fontSize: size * 0.36 }}
+      className="flex shrink-0 items-center justify-center rounded-full font-medium"
+      style={{ width: size, height: size, backgroundColor: `${color}1c`, color, fontSize: size * 0.34 }}
     >
       {initials(name)}
     </span>
@@ -92,46 +92,59 @@ function Facts({ entry }: { entry: DirectoryEntry }) {
 
 /** A search-result row, used in the directory list. */
 export function OrgRow({ entry }: { entry: DirectoryEntry }) {
+  const cause = getCause(entry.cause);
   return (
-    <li className="flex gap-3 px-4 py-4 sm:gap-4">
-      <Link href={entry.href} tabIndex={-1}>
-        <Avatar name={entry.name} cause={entry.cause} />
+    <li className="flex items-start gap-4 border-b border-line py-5">
+      <Link href={entry.href} tabIndex={-1} className="pt-0.5">
+        <Avatar name={entry.name} cause={entry.cause} size={40} />
       </Link>
       <div className="min-w-0 flex-1">
         <div className="flex flex-wrap items-center gap-x-2 gap-y-1">
-          <Link href={entry.href} className="font-semibold leading-snug text-ink hover:text-brand hover:underline">
+          <Link href={entry.href} className="text-[15px] font-medium leading-snug hover:text-brand">
             {entry.name}
           </Link>
           {entry.example && <ExamplePill />}
-          {entry.needs.length > 0 && (
-            <span className="inline-flex rounded-full bg-brand-soft px-2 py-0.5 text-xs font-semibold text-brand">
-              {entry.needs.length} {entry.needs.length === 1 ? "opportunity" : "opportunities"} seeking funding
-            </span>
-          )}
           {entry.kind === "imported" && (
-            <StatusPill title="Imported from a public directory; not yet claimed by the organization">Unclaimed</StatusPill>
+            <span className="text-xs text-muted" title="Imported from a public directory; not yet claimed by the organization">
+              Unclaimed
+            </span>
           )}
         </div>
-        <p className="mt-0.5 line-clamp-1 text-sm text-ink">{entry.summary}</p>
-        <p className="mt-0.5 text-sm text-muted">
-          {place(entry)}
+        <p className="mt-0.5 line-clamp-1 text-sm text-muted">{entry.summary}</p>
+        <p className="mt-1.5 flex flex-wrap items-center gap-x-2 text-xs text-muted">
+          <span className="inline-flex items-center gap-1.5">
+            <span className="h-1.5 w-1.5 rounded-full" style={{ backgroundColor: cause?.color }} aria-hidden />
+            {cause?.label}
+          </span>
+          <span aria-hidden>·</span>
+          <span>{place(entry)}</span>
           {entry.irsSince && (
-            <span title={`IRS tax-exempt since ${monthYear(entry.irsSince)}`}>
-              {" "}· IRS-recognized {tenure(entry.irsSince)}
-            </span>
+            <>
+              <span aria-hidden>·</span>
+              <span title={`IRS tax-exempt since ${monthYear(entry.irsSince)}`}>IRS-recognized {tenure(entry.irsSince)}</span>
+            </>
+          )}
+          {entry.needs.length > 0 && (
+            <>
+              <span aria-hidden>·</span>
+              <span className="font-medium text-brand">
+                {entry.needs.length} impact {entry.needs.length === 1 ? "opportunity" : "opportunities"}
+              </span>
+            </>
           )}
         </p>
-        <div className="mt-1.5 flex flex-wrap items-center gap-x-3 gap-y-1">
-          <CauseBadge slug={entry.cause} />
-          <Facts entry={entry} />
-        </div>
       </div>
-      <div className="flex shrink-0 items-start gap-1 self-center">
-        <SaveButton entryKey={`${entry.kind}-${entry.id}`} compact />
-        <Link href={entry.href} className="btn-ghost hidden sm:inline-flex">
-          View
-        </Link>
+      <div className="hidden w-28 shrink-0 text-right sm:block">
+        {entry.budget != null ? (
+          <>
+            <p className="text-[15px] tabular-nums">{money(entry.budget)}</p>
+            <p className="text-xs text-muted">Budget {entry.budgetYear}</p>
+          </>
+        ) : (
+          <p className="text-xs text-muted">990 not available yet</p>
+        )}
       </div>
+      <SaveButton entryKey={`${entry.kind}-${entry.id}`} compact />
     </li>
   );
 }
@@ -143,7 +156,7 @@ export function OrgCard({ entry }: { entry: DirectoryEntry }) {
     <div className="card flex flex-col overflow-hidden">
       <div className="h-14" style={{ background: `linear-gradient(135deg, ${color}, ${color}99)` }} />
       <div className="-mt-8 flex flex-1 flex-col items-center px-4 pb-4 text-center">
-        <span className="rounded-md ring-4 ring-card">
+        <span className="rounded-full ring-4 ring-card">
           <Avatar name={entry.name} cause={entry.cause} size={64} />
         </span>
         <Link

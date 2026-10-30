@@ -21,26 +21,23 @@ export default async function CausePage({ params }: Props) {
   const count = entries.filter((o) => o.cause === cause.slug).length;
 
   return (
-    <div className="container-page py-6">
-      <div className="card overflow-hidden">
-        <div className="h-20" style={{ background: `linear-gradient(135deg, ${cause.color}, ${cause.color}99)` }} />
-        <div className="px-6 pb-5 pt-4">
-          <Link href="/causes" className="text-sm font-semibold text-muted hover:text-brand hover:underline">
-            ← All causes
-          </Link>
-          <h1 className="mt-1 text-2xl font-semibold">{cause.label}</h1>
-          <p className="mt-1 max-w-2xl text-muted">{cause.blurb}</p>
-          <p className="mt-2 text-sm text-muted">
-            {count.toLocaleString("en-US")} {count === 1 ? "organization" : "organizations"}
-          </p>
-        </div>
-      </div>
+    <div className="container-page max-w-4xl py-10 sm:py-14">
+      <Link href="/causes" className="text-link text-sm text-muted">
+        All causes
+      </Link>
+      <h1 className="mt-4 flex items-center gap-3 text-4xl font-normal tracking-[-0.02em] sm:text-[44px]">
+        <span className="h-3 w-3 rounded-full" style={{ backgroundColor: cause.color }} aria-hidden />
+        {cause.label}
+      </h1>
+      <p className="mb-8 mt-3 max-w-xl text-lg text-muted">
+        {cause.blurb} {count.toLocaleString("en-US")} {count === 1 ? "organization" : "organizations"}.
+      </p>
       {count ? (
-        <div className="mt-4">
+        <div>
           <DirectoryBrowser entries={entries} initialCause={cause.slug} />
         </div>
       ) : (
-        <div className="card mt-4 p-10 text-center">
+        <div className="border-t border-ink/80 py-16 text-center">
           <p className="text-lg font-semibold">No organizations listed in this cause yet.</p>
           <Link href="/apply" className="btn-primary mt-4">
             List your nonprofit

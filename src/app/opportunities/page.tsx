@@ -31,7 +31,7 @@ export default async function ProjectsPage({ searchParams }: { searchParams: Pro
   if (!isAnswered(criteria)) {
     if (query) redirect(`/find?${query}`);
     return (
-      <div className="container-page max-w-3xl py-6">
+      <div className="container-page max-w-4xl py-10 sm:py-14">
         <AllOpportunities items={await listAllOpportunities()} />
       </div>
     );

@@ -1,41 +1,56 @@
-// Soft, grainy grayscale artwork: concentric halos around the JustCause mark's two overlapping rings.
+// A hand-painted ribbon that draws itself through two overlapping loops (a funder and a cause meeting, like the
+// logo) and wipes away behind itself. Pure SVG + CSS; the animation is .ribbon-band in globals.css.
+//
+// It imitates a flat multicolor marker held at a fixed angle: the same path is stroked once per color, each copy
+// shifted by the same step, so the stripes widen and narrow naturally as the ribbon changes direction.
 
-export function RingsArtwork({ className = "" }: { className?: string }) {
+const COLORS = ["#d8a62a", "#8fca7a", "#2f7d46", "#5266eb", "#c7b5f3", "#e9622e", "#7a2a6f"];
+const STEP = { x: 13, y: -9 };
+const BAND_WIDTH = 19;
+
+const PATH =
+  "M 10 560 C 40 390 130 270 252 228 C 378 186 430 300 334 336 C 240 370 196 262 282 204 C 366 146 476 150 494 262 C 508 346 460 430 580 560";
+
+export function RibbonArtwork({ className = "" }: { className?: string }) {
+  const offset = (COLORS.length - 1) / 2;
   return (
-    <svg viewBox="0 0 400 400" className={className} role="img" aria-label="Two overlapping rings, a funder and a cause meeting">
-      <defs>
-        <radialGradient id="halo" cx="50%" cy="50%" r="50%">
-          <stop offset="0%" stopColor="#f6f6f3" />
-          <stop offset="45%" stopColor="#e4e5e8" />
-          <stop offset="62%" stopColor="#f3f3f1" />
-          <stop offset="78%" stopColor="#e9eaec" />
-          <stop offset="100%" stopColor="#f7f7f5" />
-        </radialGradient>
-        <filter id="grain" x="0" y="0" width="100%" height="100%">
-          <feTurbulence type="fractalNoise" baseFrequency="0.9" numOctaves="2" stitchTiles="stitch" />
-          <feColorMatrix type="saturate" values="0" />
-          <feComponentTransfer>
-            <feFuncA type="linear" slope="0.06" />
-          </feComponentTransfer>
-          <feBlend in="SourceGraphic" mode="multiply" />
-        </filter>
-        <filter id="soft">
-          <feGaussianBlur stdDeviation="0.6" />
-        </filter>
-      </defs>
-      <rect width="400" height="400" rx="16" fill="url(#halo)" filter="url(#grain)" />
-      <g fill="none" stroke="#3a3b45" strokeWidth="1.4" filter="url(#soft)">
-        <circle cx="200" cy="200" r="104" strokeOpacity="0.85" />
-        <circle cx="168" cy="200" r="62" />
-        <circle cx="232" cy="200" r="62" />
-      </g>
-      <g fill="#2a2b35">
-        <circle cx="200" cy="200" r="4" fill="#5266eb" />
-        <circle cx="112" cy="146" r="3" />
-        <circle cx="291" cy="249" r="3" />
-        <circle cx="200" cy="96" r="2.2" />
-        <circle cx="168" cy="262" r="2" />
-      </g>
-    </svg>
+    <div className={`relative overflow-hidden rounded-2xl bg-[#e7e1db] ${className}`}>
+      <svg
+        viewBox="0 0 600 480"
+        className="block h-full w-full"
+        role="img"
+        aria-label="A painted ribbon of colors looping through two overlapping circles"
+      >
+        <defs>
+          {/* Slightly rough, brushy edges. */}
+          <filter id="brush" x="-10%" y="-10%" width="120%" height="120%">
+            <feTurbulence type="fractalNoise" baseFrequency="0.012 0.05" numOctaves="2" seed="4" result="noise" />
+            <feDisplacementMap in="SourceGraphic" in2="noise" scale="5" xChannelSelector="R" yChannelSelector="G" />
+          </filter>
+          {/* Fine grain over the canvas. */}
+          <filter id="grain" x="0" y="0" width="100%" height="100%">
+            <feTurbulence type="fractalNoise" baseFrequency="0.85" numOctaves="2" stitchTiles="stitch" />
+            <feColorMatrix type="saturate" values="0" />
+            <feComponentTransfer>
+              <feFuncA type="linear" slope="0.07" />
+            </feComponentTransfer>
+          </filter>
+        </defs>
+        <g filter="url(#brush)" fill="none" strokeLinecap="butt" strokeLinejoin="round">
+          {COLORS.map((color, i) => (
+            <path
+              key={color}
+              d={PATH}
+              pathLength={1}
+              stroke={color}
+              strokeWidth={BAND_WIDTH}
+              transform={`translate(${(i - offset) * STEP.x} ${(i - offset) * STEP.y})`}
+              className="ribbon-band"
+            />
+          ))}
+        </g>
+        <rect width="600" height="480" filter="url(#grain)" />
+      </svg>
+    </div>
   );
 }
