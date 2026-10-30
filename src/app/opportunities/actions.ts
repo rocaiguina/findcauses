@@ -1,8 +1,7 @@
 "use server";
 
-import { getDb } from "@/db";
-import { subscriptions } from "@/db/schema";
 import { isAnswered, parseCriteria, toQuery } from "@/lib/criteria";
+import { addSubscription } from "@/lib/store";
 
 export type SubscribeState = { ok?: boolean; error?: string } | null;
 
@@ -12,9 +11,6 @@ export async function subscribe(_prev: SubscribeState, fd: FormData): Promise<Su
   // Re-serialize so the stored search is always in canonical form.
   const criteria = parseCriteria(new URLSearchParams(String(fd.get("query") ?? "")));
   if (!isAnswered(criteria)) return { error: "Answer the questions first." };
-  await getDb()
-    .insert(subscriptions)
-    .values({ email, query: toQuery(criteria) })
-    .onConflictDoNothing();
+  await addSubscription(email, toQuery(criteria));
   return { ok: true };
 }

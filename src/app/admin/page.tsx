@@ -3,7 +3,7 @@ import Link from "next/link";
 import { logout } from "./actions";
 import { CauseBadge } from "@/components/OrgCard";
 import { money } from "@/lib/format";
-import { listByStatus } from "@/lib/store";
+import { listByStatus, usingSnapshot } from "@/lib/store";
 import type { OrgStatus } from "@/lib/types";
 
 export const dynamic = "force-dynamic";
@@ -31,6 +31,12 @@ export default async function AdminPage({ searchParams }: { searchParams: Promis
           <button className="text-sm text-muted hover:text-brand">Sign out</button>
         </form>
       </div>
+      {usingSnapshot && (
+        <p className="mt-4 rounded-lg border border-dashed border-accent/60 bg-accent/5 p-3 text-sm">
+          Read-only: the site is running on the JSON snapshot, so new applications are saved to Netlify Blobs and can
+          be reviewed here, but approving them needs a database.
+        </p>
+      )}
       <nav className="mt-6 flex gap-2">
         {TABS.map((t) => (
           <Link

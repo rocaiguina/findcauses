@@ -7,7 +7,7 @@
     "build": "next build",
     "start": "next start",
     "lint": "eslint",
-    "db:generate": "drizzle-kit generate && node scripts/sync-migrations.mjs",
+    "db:generate": "drizzle-kit generate",
     "db:migrate": "drizzle-kit migrate",
     "db:studio": "drizzle-kit studio",
     "imports:load": "tsx scripts/import-listings.ts",
@@ -15,10 +15,11 @@
     "imports:clear": "tsx scripts/clear-imports.ts",
     "imports:categorize": "tsx scripts/categorize-listings.ts",
     "examples:load": "tsx scripts/examples.ts",
-    "examples:clear": "tsx scripts/examples.ts --clear"
+    "examples:clear": "tsx scripts/examples.ts --clear",
+    "snapshot:export": "tsx scripts/export-snapshot.ts"
   },
   "dependencies": {
-    "@netlify/database": "^2.0.1",
+    "@netlify/blobs": "^11.1.7",
     "drizzle-orm": "^0.45.4",
     "next": "15.5.4",
     "pg": "^8.23.1",

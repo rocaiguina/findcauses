@@ -3,7 +3,7 @@ import { notFound } from "next/navigation";
 import { review } from "../actions";
 import { FundingOpportunities } from "@/components/OrgMatching";
 import { OrgProfile } from "@/components/OrgProfile";
-import { getById, profileEntry } from "@/lib/store";
+import { getById, profileEntry, usingSnapshot } from "@/lib/store";
 
 export const dynamic = "force-dynamic";
 
@@ -25,12 +25,12 @@ export default async function AdminReviewPage({ params }: { params: Promise<{ id
             </span>
           </div>
           <div className="flex gap-2">
-            {org.status !== "rejected" && (
+            {!usingSnapshot && org.status !== "rejected" && (
               <form action={review.bind(null, org.id, "rejected")}>
                 <button className="btn-ghost !py-2">Reject</button>
               </form>
             )}
-            {org.status !== "approved" && (
+            {!usingSnapshot && org.status !== "approved" && (
               <form action={review.bind(null, org.id, "approved")}>
                 <button className="btn-primary !py-2">Approve & publish</button>
               </form>

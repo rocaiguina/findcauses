@@ -1,27 +1,40 @@
 import "server-only";
-import { and, desc, eq, inArray } from "drizzle-orm";
+import { and, eq } from "drizzle-orm";
 import { getDb } from "@/db";
+import { loadImported, loadImportedBySlug } from "@/db/imported";
 import { activeEin, insertOrganization, loadOrganizations, type Form990Upload, type NewOrganization } from "@/db/organizations";
-import { form990Files, importedOrgs, irsFilings, organizations } from "@/db/schema";
+import { form990Files, organizations, subscriptions } from "@/db/schema";
 import { searchWords } from "./format";
 import { toEnglish } from "./imports";
-import type { DirectoryEntry, ImportedListing, IrsFiling, Organization, OrgStatus } from "./types";
+import { getApplication, getApplicationPdf, listApplications, saveApplication, saveSubscription } from "./inbox";
+import { readSnapshot } from "./snapshot";
+import type { DirectoryEntry, ImportedListing, Organization, OrgStatus } from "./types";
+
+// Two data sources: Postgres when a database URL is configured (local development), otherwise the
+// read-only JSON snapshot plus a Netlify Blobs inbox for submissions (the deployed site, for now).
+// DATA_SOURCE=snapshot forces the snapshot, so a stray local DATABASE_URL can't leak into a deploy.
+export const usingSnapshot =
+  process.env.DATA_SOURCE === "snapshot" || !(process.env.DATABASE_URL ?? process.env.NETLIFY_DB_URL);
+
+const byName = (a: Organization, b: Organization) => a.name.localeCompare(b.name);
+const newestFirst = (a: Organization, b: Organization) => b.submittedAt.localeCompare(a.submittedAt);
 
 export async function listApproved(): Promise<Organization[]> {
-  const orgs = await loadOrganizations(getDb(), eq(organizations.status, "approved"));
-  return orgs.sort((a, b) => a.name.localeCompare(b.name));
+  if (usingSnapshot) return [...readSnapshot().organizations].sort(byName);
+  return (await loadOrganizations(getDb(), eq(organizations.status, "approved"))).sort(byName);
 }
 
 export async function listByStatus(status: OrgStatus): Promise<Organization[]> {
-  const orgs = await loadOrganizations(getDb(), eq(organizations.status, status));
-  return orgs.sort((a, b) => b.submittedAt.localeCompare(a.submittedAt));
+  if (usingSnapshot) {
+    if (status === "approved") return [...readSnapshot().organizations].sort(newestFirst);
+    return status === "pending" ? (await listApplications()).sort(newestFirst) : [];
+  }
+  return (await loadOrganizations(getDb(), eq(organizations.status, status))).sort(newestFirst);
 }
 
 export async function getApprovedBySlug(slug: string): Promise<Organization | undefined> {
-  const [org] = await loadOrganizations(
-    getDb(),
-    and(eq(organizations.slug, slug), eq(organizations.status, "approved")),
-  );
+  if (usingSnapshot) return readSnapshot().organizations.find((o) => o.slug === slug);
+  const [org] = await loadOrganizations(getDb(), and(eq(organizations.slug, slug), eq(organizations.status, "approved")));
   return org;
 }
 
@@ -29,15 +42,18 @@ const UUID = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
 
 export async function getById(id: string): Promise<Organization | undefined> {
   if (!UUID.test(id)) return undefined; // avoid a Postgres cast error on malformed URLs
+  if (usingSnapshot) return readSnapshot().organizations.find((o) => o.id === id) ?? (await getApplication(id));
   const [org] = await loadOrganizations(getDb(), eq(organizations.id, id));
   return org;
 }
 
 export async function insert(org: NewOrganization, file: Form990Upload): Promise<string> {
+  if (usingSnapshot) return saveApplication(org, file);
   return insertOrganization(getDb(), org, file);
 }
 
 export async function setStatus(id: string, status: OrgStatus, irsRulingDate?: string | null): Promise<void> {
+  if (usingSnapshot) throw new Error("Approving applications needs a database; the site is running on the snapshot.");
   const updated = await getDb()
     .update(organizations)
     .set({ status, reviewedAt: new Date(), ...(irsRulingDate !== undefined && { irsRulingDate }) })
@@ -47,63 +63,29 @@ export async function setStatus(id: string, status: OrgStatus, irsRulingDate?: s
 }
 
 export async function einExists(ein: string): Promise<boolean> {
+  if (usingSnapshot)
+    return readSnapshot().organizations.some((o) => o.ein === ein) || (await listApplications()).some((o) => o.ein === ein);
   const rows = await getDb().select({ id: organizations.id }).from(organizations).where(activeEin(ein)).limit(1);
   return rows.length > 0;
 }
 
-export async function get990(orgId: string) {
+export async function get990(orgId: string): Promise<{ fileName: string; data: Uint8Array } | undefined> {
+  if (usingSnapshot) return getApplicationPdf(orgId);
   const [file] = await getDb().select().from(form990Files).where(eq(form990Files.orgId, orgId));
-  return file;
+  return file && { fileName: file.fileName, data: file.data };
 }
 
-// --- Imported (unclaimed) listings --------------------------------------------------------
-
-async function filingsByEin(eins: string[]): Promise<Map<string, IrsFiling[]>> {
-  const byEin = new Map<string, IrsFiling[]>();
-  if (!eins.length) return byEin;
-  const rows = await getDb()
-    .select()
-    .from(irsFilings)
-    .where(inArray(irsFilings.ein, eins))
-    .orderBy(desc(irsFilings.taxYear));
-  for (const { ein, ...f } of rows) byEin.set(ein, [...(byEin.get(ein) ?? []), f]);
-  return byEin;
-}
-
-function toListing(row: typeof importedOrgs.$inferSelect, filings: IrsFiling[]): ImportedListing {
-  return {
-    id: row.id,
-    slug: row.slug,
-    name: row.name,
-    sources: row.sources,
-    city: row.city,
-    state: row.state,
-    cause: row.cause,
-    tags: row.tags,
-    mission: row.mission,
-    website: row.website,
-    email: row.email,
-    phone: row.phone,
-    ein: row.ein,
-    irsName: row.irsName,
-    irsMatchScore: row.irsMatchScore,
-    nteeCode: row.nteeCode,
-    irsRulingDate: row.irsRulingDate,
-    filings,
-  };
+export async function addSubscription(email: string, query: string): Promise<void> {
+  if (usingSnapshot) return saveSubscription(email, query);
+  await getDb().insert(subscriptions).values({ email, query }).onConflictDoNothing();
 }
 
 export async function listImported(): Promise<ImportedListing[]> {
-  const rows = await getDb().select().from(importedOrgs);
-  const filings = await filingsByEin([...new Set(rows.flatMap((r) => (r.ein ? [r.ein] : [])))]);
-  return rows.map((r) => toListing(r, r.ein ? (filings.get(r.ein) ?? []) : []));
+  return usingSnapshot ? readSnapshot().imported : loadImported(getDb());
 }
 
 export async function getImportedBySlug(slug: string): Promise<ImportedListing | undefined> {
-  const [row] = await getDb().select().from(importedOrgs).where(eq(importedOrgs.slug, slug));
-  if (!row) return undefined;
-  const filings = row.ein ? ((await filingsByEin([row.ein])).get(row.ein) ?? []) : [];
-  return toListing(row, filings);
+  return usingSnapshot ? readSnapshot().imported.find((l) => l.slug === slug) : loadImportedBySlug(getDb(), slug);
 }
 
 export function profileEntry(o: Organization): DirectoryEntry {
