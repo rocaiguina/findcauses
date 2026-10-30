@@ -29,12 +29,22 @@ const ITEMS = [
     ),
   },
   {
-    href: "/find",
-    label: "Find",
-    match: (p: string) => p.startsWith("/find") || p.startsWith("/opportunities"),
+    href: "/opportunities",
+    label: "Opportunities",
+    match: (p: string) => p.startsWith("/opportunities"),
     svg: (
       <svg viewBox="0 0 24 24" className={icon} fill="currentColor" aria-hidden>
         <path d="M17 6V5a3 3 0 0 0-3-3h-4a3 3 0 0 0-3 3v1H2v4a3 3 0 0 0 3 3h14a3 3 0 0 0 3-3V6zM9 5a1 1 0 0 1 1-1h4a1 1 0 0 1 1 1v1H9zm10 9a5 5 0 0 0 1.81-.35V19a3 3 0 0 1-3 3H6.2a3 3 0 0 1-3-3v-5.35A5 5 0 0 0 5 14z" />
+      </svg>
+    ),
+  },
+  {
+    href: "/find",
+    label: "Find",
+    match: (p: string) => p.startsWith("/find"),
+    svg: (
+      <svg viewBox="0 0 24 24" className={icon} fill="currentColor" aria-hidden>
+        <path d="M4 6h9.17a3 3 0 0 1 5.66 0H20v2h-1.17a3 3 0 0 1-5.66 0H4zm12 2a1 1 0 1 0 0-2 1 1 0 0 0 0 2zM4 16h3.17a3 3 0 0 1 5.66 0H20v2h-7.17a3 3 0 0 1-5.66 0H4zm6 2a1 1 0 1 0 0-2 1 1 0 0 0 0 2z" />
       </svg>
     ),
   },

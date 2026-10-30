@@ -1,6 +1,7 @@
 import type { Metadata } from "next";
 import Link from "next/link";
 import { redirect } from "next/navigation";
+import { AllOpportunities, type ListedOpportunity } from "./AllOpportunities";
 import { CopyLinkButton, SubscribeCard } from "./ShortlistTools";
 import { RememberAnswers, SaveAllButton, SaveButton } from "@/components/Save";
 import { MatchBadge } from "@/components/Match";
@@ -10,20 +11,31 @@ import { CAUSES } from "@/lib/causes";
 import { describe, isAnswered, parseCriteria, toQuery } from "@/lib/criteria";
 import { money, placeName } from "@/lib/format";
 import { fundingTypeLabel } from "@/lib/funding";
-import { ADDED_BY_JUSTCAUSE, isExample } from "@/lib/match";
+import { ADDED_BY_JUSTCAUSE, isExample, opportunitiesFor } from "@/lib/match";
 import { buildShortlist, SHORTLIST_SIZE } from "@/lib/shortlist";
 import { getById, getImportedBySlug, listDirectory } from "@/lib/store";
 
 export const dynamic = "force-dynamic";
-export const metadata: Metadata = { title: "Your shortlist", robots: { index: false } };
-
 type SP = Record<string, string | string[] | undefined>;
+
+export async function generateMetadata({ searchParams }: { searchParams: Promise<SP> }): Promise<Metadata> {
+  const answered = isAnswered(parseCriteria(await searchParams));
+  return answered ? { title: "Your matches", robots: { index: false } } : { title: "Impact opportunities" };
+}
 
 export default async function ProjectsPage({ searchParams }: { searchParams: Promise<SP> }) {
   const sp = await searchParams;
   const criteria = parseCriteria(sp);
   const query = toQuery(criteria);
-  if (!isAnswered(criteria)) redirect(`/find${query ? `?${query}` : ""}`);
+  // No answers: browse every posted opportunity. Partial answers: finish the questions.
+  if (!isAnswered(criteria)) {
+    if (query) redirect(`/find?${query}`);
+    return (
+      <div className="container-page max-w-3xl py-6">
+        <AllOpportunities items={await listAllOpportunities()} />
+      </div>
+    );
+  }
 
   const more = sp.more === "1";
   const shortlist = buildShortlist(await listDirectory(), criteria, more ? SHORTLIST_SIZE * 2 : SHORTLIST_SIZE);
@@ -44,7 +56,7 @@ export default async function ProjectsPage({ searchParams }: { searchParams: Pro
       <section className="card px-5 py-4">
         <div className="flex flex-wrap items-start justify-between gap-3">
           <div>
-            <h1 className="text-xl font-semibold">Your shortlist</h1>
+            <h1 className="text-xl font-semibold">Your matches</h1>
             <p className="mt-0.5 text-sm text-muted">
               We reviewed {shortlist.considered.toLocaleString("en-US")} {causeNames} organizations
               {criteria.place === "any" ? "" : ` in ${placeName(criteria.place)}`} ({shortlist.posting} with posted
@@ -134,4 +146,27 @@ export default async function ProjectsPage({ searchParams }: { searchParams: Pro
       )}
     </div>
   );
+}
+
+/** Every opportunity a nonprofit posted (or JustCause added as an example), for the browse list. */
+async function listAllOpportunities(): Promise<ListedOpportunity[]> {
+  return (await listDirectory())
+    .flatMap(opportunitiesFor)
+    .filter((o) => !o.implied)
+    .map((o) => ({
+      key: o.key,
+      entryKey: `${o.entry.kind}-${o.entry.id}`,
+      href: o.entry.href,
+      title: o.title,
+      description: o.need?.description ?? "",
+      orgName: o.entry.name,
+      place: [o.entry.city, placeName(o.entry.state)].filter(Boolean).join(", "),
+      cause: o.entry.cause,
+      approaches: o.entry.approaches,
+      type: o.type,
+      amount: o.amount,
+      timeframe: o.need?.timeframe ?? null,
+      example: isExample(o),
+      exampleNote: o.entry.example ? undefined : ADDED_BY_JUSTCAUSE,
+    }));
 }
