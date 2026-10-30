@@ -1,6 +1,7 @@
 import Link from "next/link";
 import { MatchBadge, ReasonList } from "./Match";
 import { Avatar, CauseBadge, ExamplePill, StatusPill, initials } from "./OrgCard";
+import { SaveButton } from "./Save";
 import { money, monthYear, placeName, tenure } from "@/lib/format";
 import { fundingTypeLabel } from "@/lib/funding";
 import { linkedinCompanySearch, linkedinPeopleSearch } from "@/lib/linkedin";
@@ -77,6 +78,7 @@ export function ProjectDetail({
           {e.kind === "imported" && <StatusPill>Unclaimed listing</StatusPill>}
         </div>
         <div className="mt-4 flex flex-wrap gap-2">
+          <SaveButton entryKey={`${e.kind}-${e.id}`} />
           <a href={linkedinCompanySearch(e.name)} target="_blank" rel="noopener noreferrer" className="btn-primary">
             Find on LinkedIn ↗
           </a>

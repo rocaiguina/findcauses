@@ -2,6 +2,7 @@ import type { Metadata } from "next";
 import Link from "next/link";
 import { redirect } from "next/navigation";
 import { CopyLinkButton, SubscribeCard } from "./ShortlistTools";
+import { RememberAnswers, SaveAllButton, SaveButton } from "@/components/Save";
 import { MatchBadge } from "@/components/Match";
 import { Avatar, ExamplePill, StatusPill } from "@/components/OrgCard";
 import { ProjectDetail } from "@/components/ProjectDetail";
@@ -51,6 +52,8 @@ export default async function ProjectsPage({ searchParams }: { searchParams: Pro
             </p>
           </div>
           <div className="flex flex-wrap gap-2">
+            <RememberAnswers query={query} />
+            <SaveAllButton entryKeys={shortlist.items.map((i) => `${i.opp.entry.kind}-${i.opp.entry.id}`)} />
             <Link href={`/find?${query}`} className="btn-muted">
               Edit answers
             </Link>
@@ -84,7 +87,10 @@ export default async function ProjectsPage({ searchParams }: { searchParams: Pro
                 const on = item.opp.key === selected.opp.key;
                 const e = item.opp.entry;
                 return (
-                  <li key={item.opp.key}>
+                  <li key={item.opp.key} className="relative">
+                    <div className="absolute right-2 top-2 z-10">
+                      <SaveButton entryKey={`${e.kind}-${e.id}`} compact />
+                    </div>
                     <Link
                       href={`${href({ pick: item.opp.key })}#detail`}
                       scroll={false}
@@ -95,7 +101,7 @@ export default async function ProjectsPage({ searchParams }: { searchParams: Pro
                     >
                       <span className="w-4 shrink-0 pt-1 text-sm font-semibold text-muted">{i + 1}</span>
                       <Avatar name={e.name} cause={e.cause} size={44} />
-                      <div className="min-w-0 flex-1">
+                      <div className="min-w-0 flex-1 pr-6">
                         <p className="font-semibold leading-snug text-brand">{item.opp.title}</p>
                         <p className="text-sm">{e.name}</p>
                         <p className="text-xs text-muted">

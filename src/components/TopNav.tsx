@@ -3,6 +3,7 @@
 import Link from "next/link";
 import { usePathname, useRouter } from "next/navigation";
 import { useState } from "react";
+import { useSaved } from "@/lib/saved";
 
 const icon = "h-6 w-6";
 
@@ -29,7 +30,7 @@ const ITEMS = [
   },
   {
     href: "/find",
-    label: "Opportunities",
+    label: "Find",
     match: (p: string) => p.startsWith("/find") || p.startsWith("/opportunities"),
     svg: (
       <svg viewBox="0 0 24 24" className={icon} fill="currentColor" aria-hidden>
@@ -38,18 +39,18 @@ const ITEMS = [
     ),
   },
   {
-    href: "/causes",
-    hideOnMobile: true,
-    label: "Causes",
-    match: (p: string) => p.startsWith("/causes"),
+    href: "/shortlist",
+    label: "Shortlist",
+    match: (p: string) => p.startsWith("/shortlist"),
     svg: (
       <svg viewBox="0 0 24 24" className={icon} fill="currentColor" aria-hidden>
-        <path d="M3 3h8v8H3zm10 0h8v8h-8zM3 13h8v8H3zm10 0h8v8h-8z" />
+        <path d="m12 2.5 2.94 6 6.56.95-4.75 4.63 1.12 6.53L12 17.53l-5.87 3.08 1.12-6.53L2.5 9.45l6.56-.95z" />
       </svg>
     ),
   },
   {
     href: "/apply",
+    hideOnMobile: true,
     label: "Get listed",
     match: (p: string) => p.startsWith("/apply"),
     svg: (
@@ -64,6 +65,7 @@ export function TopNav() {
   const pathname = usePathname();
   const router = useRouter();
   const [q, setQ] = useState("");
+  const saved = useSaved().keys.length;
 
   return (
     <header className="sticky top-0 z-30 border-b border-line bg-card">
@@ -104,6 +106,11 @@ export function TopNav() {
                 }`}
               >
                 {item.svg}
+                {item.href === "/shortlist" && saved > 0 && (
+                  <span className="absolute right-2 top-1.5 min-w-4 rounded-full bg-accent px-1 text-center text-[10px] font-bold leading-4 text-white sm:right-4">
+                    {saved}
+                  </span>
+                )}
                 <span className="hidden sm:block">{item.label}</span>
                 {active && <span className="absolute inset-x-0 bottom-0 h-0.5 bg-ink" />}
               </Link>

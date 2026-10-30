@@ -28,6 +28,7 @@ export function DirectoryBrowser({
   const [state, setState] = useState("");
   const [kind, setKind] = useState<Kind>("");
   const [withFinancials, setWithFinancials] = useState(false);
+  const [seeking, setSeeking] = useState(false);
   const [auditedOnly, setAuditedOnly] = useState(false);
   const [sort, setSort] = useState<Sort>("budget-desc");
   const [shown, setShown] = useState(PAGE);
@@ -48,6 +49,7 @@ export function DirectoryBrowser({
       if (state && o.state !== state) return false;
       if (kind && o.kind !== kind) return false;
       if (withFinancials && o.budget == null) return false;
+      if (seeking && !o.needs.length) return false;
       if (auditedOnly && !o.audited) return false;
       if (b && (o.budget == null || o.budget < b.min || o.budget >= b.max)) return false;
       return words.every((w) => o.searchText.includes(w));
@@ -69,7 +71,7 @@ export function DirectoryBrowser({
           return a.name.localeCompare(b.name);
       }
     });
-  }, [entries, query, cause, band, state, kind, withFinancials, auditedOnly, sort]);
+  }, [entries, query, cause, band, state, kind, withFinancials, seeking, auditedOnly, sort]);
 
   // Each filter change restarts paging from the top.
   const update =
@@ -86,6 +88,7 @@ export function DirectoryBrowser({
     setState("");
     setKind("");
     setWithFinancials(false);
+    setSeeking(false);
     setAuditedOnly(false);
     setShown(PAGE);
   };
@@ -137,13 +140,16 @@ export function DirectoryBrowser({
             <option value="profile">Full profiles</option>
             <option value="imported">Unclaimed listings</option>
           </select>
+          <button type="button" className={pill(seeking)} onClick={() => update(setSeeking)(!seeking)}>
+            Seeking funding
+          </button>
           <button type="button" className={pill(withFinancials)} onClick={() => update(setWithFinancials)(!withFinancials)}>
             Has 990 financials
           </button>
           <button type="button" className={pill(auditedOnly)} onClick={() => update(setAuditedOnly)(!auditedOnly)}>
             Audited
           </button>
-          {(query || cause || band || state || kind || withFinancials || auditedOnly) && (
+          {(query || cause || band || state || kind || withFinancials || seeking || auditedOnly) && (
             <button type="button" onClick={reset} className="text-sm font-semibold text-muted hover:text-ink hover:underline">
               Reset
             </button>

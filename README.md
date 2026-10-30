@@ -71,20 +71,21 @@ from the most recent filing in ProPublica's data. Each listing links to its ProP
 Name matching is conservative: a listing gets financials only when its normalized name scores ≥ 90 against
 an IRS record in Puerto Rico and clearly beats any other candidate. Matches should still be spot-checked.
 
-## Funders: five questions, a shortlist of six
+## Funders: find, save, share
 
-Funders don't keep a profile. Someone tasked with finding what to fund in Puerto Rico answers five quick
-questions at `/find` and immediately gets a shortlist of 6 **impact opportunities**: what nonprofits are
-raising money for, posted the way companies post jobs. Each comes with the reasons it fits and links to find
-the organization and its people on LinkedIn, where the conversation continues.
+Built for a foundation program officer tasked with finding what to fund in Puerto Rico. No account.
 
-- The answers live in the URL (`/opportunities?c=education,public-health&g=100k-500k&m=990`), so a shortlist
-  can be bookmarked or shared with colleagues, and downloaded as CSV for an internal memo.
-- Subscribing is optional: an email and the saved search go in `subscriptions`. **Sending the emails is not
-  built yet.**
-- `src/lib/match.ts` scores each opportunity (cause, place, organization size, gift fit, type of funding,
-  must-haves); `src/lib/shortlist.ts` keeps one per organization, ranks posted opportunities ahead of
-  organizations that haven't posted one, and returns the top 6.
+- **Find:** search from the home page, or answer 4 questions at `/find` (causes and place, how you want to
+  drive change, typical grant size, must-haves) to get 6 matches at `/opportunities`, each with the reasons.
+- **Save:** ★ Save on any organization (directory, matches, profiles, home). Saved organizations live in the
+  browser (`localStorage`) and the **Shortlist** tab shows the count.
+- **Share:** `/shortlist` carries the saved organizations in its URL, so the link works for colleagues. It prints
+  cleanly as a briefing memo (Print / Save as PDF) and downloads as CSV, with LinkedIn links to reach the people.
+
+How organizations drive change (research & policy, advocacy & rights, coalitions & systems change, direct
+services) is inferred in `src/lib/approach.ts` from names, descriptions and IRS codes, with hand-picked
+overrides. Matching lives in `src/lib/match.ts`; the 6 matches come from `src/lib/shortlist.ts`.
+Email subscriptions are stored, but **sending the emails is not built yet**.
 
 ### Example data
 

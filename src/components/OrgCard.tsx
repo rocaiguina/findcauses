@@ -2,6 +2,7 @@ import Link from "next/link";
 import { getCause } from "@/lib/causes";
 import { money, monthYear, tenure } from "@/lib/format";
 import type { DirectoryEntry } from "@/lib/types";
+import { SaveButton } from "./Save";
 
 export function CauseBadge({ slug }: { slug: string }) {
   const cause = getCause(slug);
@@ -125,9 +126,12 @@ export function OrgRow({ entry }: { entry: DirectoryEntry }) {
           <Facts entry={entry} />
         </div>
       </div>
-      <Link href={entry.href} className="btn-ghost hidden self-center sm:inline-flex">
-        View
-      </Link>
+      <div className="flex shrink-0 items-start gap-1 self-center">
+        <SaveButton entryKey={`${entry.kind}-${entry.id}`} compact />
+        <Link href={entry.href} className="btn-ghost hidden sm:inline-flex">
+          View
+        </Link>
+      </div>
     </li>
   );
 }

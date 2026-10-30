@@ -4,6 +4,7 @@ import { getDb } from "@/db";
 import { loadImported, loadImportedBySlug } from "@/db/imported";
 import { activeEin, insertOrganization, loadOrganizations, type Form990Upload, type NewOrganization } from "@/db/organizations";
 import { form990Files, organizations, subscriptions } from "@/db/schema";
+import { inferApproaches } from "./approach";
 import { searchWords } from "./format";
 import { toEnglish } from "./imports";
 import { getApplication, getApplicationPdf, listApplications, saveApplication, saveSubscription } from "./inbox";
@@ -109,11 +110,29 @@ export function profileEntry(o: Organization): DirectoryEntry {
     staff: f.employees,
     audited: o.stewardship.independentAudit,
     needs: o.fundingNeeds,
+    approaches: inferApproaches({
+      name: o.name,
+      text: [o.tagline, o.mission, ...o.focusAreas, ...o.fundingNeeds.map((n) => n.title)].join(" "),
+    }),
+    partners: o.networks.map((n) => n.name),
     example: o.example,
     irsSince: o.irsRulingDate,
     searchText: searchWords(
       [o.name, o.tagline, o.mission, o.city, ...o.focusAreas, ...o.networks.map((n) => n.name)].join(" "),
     ).join(" "),
+  };
+}
+
+/** Revenue change from the earliest to the latest IRS filing, at least two years apart. */
+function revenueGrowth(l: ImportedListing): DirectoryEntry["growth"] {
+  const withRevenue = l.filings.filter((f) => f.totalRevenue != null && f.totalRevenue > 0);
+  const latest = withRevenue[0];
+  const earliest = withRevenue[withRevenue.length - 1];
+  if (!latest || !earliest || latest.taxYear - earliest.taxYear < 2) return undefined;
+  return {
+    fromYear: earliest.taxYear,
+    toYear: latest.taxYear,
+    pct: Math.round(((latest.totalRevenue! - earliest.totalRevenue!) / earliest.totalRevenue!) * 100),
   };
 }
 
@@ -135,6 +154,13 @@ export function importedEntry(l: ImportedListing): DirectoryEntry {
     netAssets: latest?.netAssets ?? undefined,
     irsSince: l.irsRulingDate ?? undefined,
     needs: l.needs ?? [],
+    approaches: inferApproaches({
+      name: l.name,
+      text: [l.mission, ...l.tags, ...(l.needs ?? []).map((n) => `${n.title} ${n.description}`)].join(" "),
+      ntee: l.nteeCode,
+    }),
+    partners: [],
+    growth: revenueGrowth(l),
     // The IRS name and an English rendering let funders search "Center for a New Economy" for a Spanish name.
     searchText: searchWords(
       [l.name, toEnglish(l.name), l.irsName, l.mission, l.city, ...l.tags].filter(Boolean).join(" "),

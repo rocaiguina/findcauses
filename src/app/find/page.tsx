@@ -14,7 +14,7 @@ export default async function FindPage({
   return (
     <div className="container-page max-w-2xl py-8">
       <p className="mb-3 text-center text-sm text-muted">
-        5 quick questions → a shortlist of 6 impact opportunities in Puerto Rico that fit, and who to contact. No account needed.
+        4 quick questions. No account needed.
       </p>
       <Finder initial={initial} />
     </div>

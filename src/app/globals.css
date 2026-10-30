@@ -54,3 +54,25 @@ body {
 @utility section-title {
   @apply text-xl font-semibold text-ink;
 }
+
+/* Printing the shortlist gives a clean briefing memo: no navigation, buttons or shadows. */
+.print-only {
+  display: none;
+}
+@media print {
+  body > header,
+  body > footer,
+  .no-print {
+    display: none !important;
+  }
+  .print-only {
+    display: block;
+  }
+  body {
+    background: white;
+  }
+  .card {
+    box-shadow: none;
+    border: 1px solid #ddd;
+  }
+}

@@ -1,3 +1,4 @@
+import { approachLabel, type Approach } from "./approach";
 import { getCause } from "./causes";
 import { money, placeName, yearsSince } from "./format";
 import { fundingTypeLabel, type FundingType } from "./funding";
@@ -8,6 +9,8 @@ import type { DirectoryEntry, FundingNeed } from "./types";
 
 export type FunderPrefs = {
   causes: string[];
+  /** Empty means any approach. */
+  approaches?: Approach[];
   states: string[];
   fundingTypes: FundingType[];
   orgBudgetMin: number | null;
@@ -78,7 +81,7 @@ const range = (min: number | null, max: number | null) =>
 
 const within = (v: number, min: number | null, max: number | null) => (min == null || v >= min) && (max == null || v <= max);
 
-const WEIGHTS: Record<string, number> = { cause: 30, location: 15, size: 15, gift: 15, type: 15, must: 5 };
+const WEIGHTS: Record<string, number> = { cause: 30, approach: 20, location: 15, size: 15, gift: 15, type: 15, must: 5 };
 const CREDIT: Record<ReasonStatus, number> = { match: 1, partial: 0.5, unknown: 0.25, miss: 0 };
 
 export function matchOpportunity(prefs: FunderPrefs, opp: Opportunity): MatchResult {
@@ -92,6 +95,20 @@ export function matchOpportunity(prefs: FunderPrefs, opp: Opportunity): MatchRes
         ? { key: "cause", status: "match", text: `Works on ${causeLabel}, one of your causes` }
         : { key: "cause", status: "miss", text: `Works on ${causeLabel}, which isn't one of your causes` },
     );
+
+  if (prefs.approaches?.length) {
+    const shared = e.approaches.filter((a) => prefs.approaches!.includes(a));
+    reasons.push(
+      shared.length
+        ? { key: "approach", status: "match", text: `${shared.map(approachLabel).join(" and ")}, how you want to drive change` }
+        : {
+            // Approaches are inferred from names and descriptions, so a mismatch is a soft signal.
+            key: "approach",
+            status: "partial",
+            text: `Looks like ${e.approaches.map(approachLabel).join(" and ").toLowerCase()}, not an approach you picked`,
+          },
+    );
+  }
 
   if (prefs.states.length)
     reasons.push(
@@ -132,7 +149,11 @@ export function matchOpportunity(prefs: FunderPrefs, opp: Opportunity): MatchRes
       const pct = share < 0.01 ? `about ${(share * 100).toFixed(1)}%` : `about ${Math.round(share * 100)}%`;
       reasons.push(
         share > 0.2
-          ? { key: "gift", status: "partial", text: `Your typical gift would be ${pct} of their budget, a lot of dependence on one funder` }
+          ? {
+              key: "gift",
+              status: "partial",
+              text: `Your typical gift would be ${pct} of their budget: a partnership-scale investment, so check their capacity to absorb it`,
+            }
           : share < 0.005
             ? { key: "gift", status: "partial", text: `Your typical gift would be ${pct} of their budget, a modest share` }
             : { key: "gift", status: "match", text: `Your typical gift would be ${pct} of their budget, meaningful without creating dependence` },
@@ -223,6 +244,7 @@ export function bestMatchFor(prefs: FunderPrefs, entry: DirectoryEntry) {
 export function hasPreferences(p: FunderPrefs): boolean {
   return Boolean(
     p.causes.length ||
+      p.approaches?.length ||
       p.states.length ||
       p.fundingTypes.length ||
       p.orgBudgetMin != null ||

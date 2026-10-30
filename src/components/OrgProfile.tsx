@@ -1,4 +1,5 @@
 import { CauseBadge, ExamplePill, StatusPill } from "./OrgCard";
+import { SaveButton } from "./Save";
 import {
   PersonRow,
   ProfileSection,
@@ -111,6 +112,7 @@ export function OrgProfile({
         }
         actions={
           <>
+            <SaveButton entryKey={`profile-${org.id}`} />
             <a href={`mailto:${org.contact.email}`} className="btn-primary">
               Message {org.contact.name.split(" ").find((w) => !/^(dr|dra|sr|sra|srta|lcdo|lcda|mr|mrs|ms|prof)\.?$/i.test(w)) ?? "them"}
             </a>

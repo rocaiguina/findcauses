@@ -1,4 +1,5 @@
 import type { CauseSlug } from "./causes";
+import type { Approach } from "./approach";
 import type { FundingType } from "./funding";
 
 export type OrgStatus = "pending" | "approved" | "rejected";
@@ -71,6 +72,12 @@ export type DirectoryEntry = {
   example?: boolean;
   /** Posted funding needs; unclaimed listings have none and imply general operating support. */
   needs: FundingNeed[];
+  /** How the organization drives change, inferred from its name, description and IRS code. */
+  approaches: Approach[];
+  /** Coalitions, partners and agencies it works with (full profiles only, for now). */
+  partners: string[];
+  /** Revenue change across its IRS filings, when there are at least two years apart. */
+  growth?: { fromYear: number; toYear: number; pct: number };
   /** IRS tax-exemption ruling date (YYYY-MM-DD), when known. */
   irsSince?: string;
   searchText: string;

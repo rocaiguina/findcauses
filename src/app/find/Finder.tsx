@@ -2,20 +2,11 @@
 
 import { useRouter } from "next/navigation";
 import { useState } from "react";
+import { APPROACHES, type Approach } from "@/lib/approach";
 import { CAUSES } from "@/lib/causes";
-import {
-  GIFT_BANDS,
-  MAX_CAUSES,
-  MUST_HAVES,
-  PLACES,
-  SIZES,
-  toQuery,
-  type Criteria,
-  type MustHave,
-} from "@/lib/criteria";
-import { FUNDING_TYPES, type FundingType } from "@/lib/funding";
+import { GIFT_BANDS, MAX_CAUSES, MUST_HAVES, PLACES, toQuery, type Criteria, type MustHave } from "@/lib/criteria";
 
-const STEPS = 5;
+const STEPS = 4;
 
 function Pill({ on, onClick, children, disabled }: { on: boolean; onClick: () => void; children: React.ReactNode; disabled?: boolean }) {
   return (
@@ -58,13 +49,13 @@ export function Finder({ initial }: { initial: Criteria }) {
 
   const set = (patch: Partial<Criteria>) => setC((prev) => ({ ...prev, ...patch }));
   const toggle = <T,>(list: T[], v: T) => (list.includes(v) ? list.filter((x) => x !== v) : [...list, v]);
-  const finish = (final: Criteria) => {
-    setGoing(true);
-    router.push(`/opportunities?${toQuery(final)}`);
-  };
   const next = () => setStep((s) => Math.min(STEPS, s + 1));
+  const finish = () => {
+    setGoing(true);
+    router.push(`/opportunities?${toQuery(c)}`);
+  };
 
-  const canNext = step === 1 ? c.causes.length > 0 : step === 2 ? c.gift != null : true;
+  const canNext = step === 1 ? c.causes.length > 0 : step === 3 ? c.gift != null : true;
 
   return (
     <div className="card overflow-hidden">
@@ -73,13 +64,13 @@ export function Finder({ initial }: { initial: Criteria }) {
       </div>
       <div className="px-5 py-6 sm:px-8">
         <p className="text-xs font-semibold text-muted">
-          Question {step} of {STEPS}
+          {step} of {STEPS}
         </p>
 
         {step === 1 && (
           <section>
-            <h1 className="mt-1 text-2xl font-semibold">What do you want to fund?</h1>
-            <p className="mt-1 text-sm text-muted">Pick up to {MAX_CAUSES}.</p>
+            <h1 className="mt-1 text-2xl font-semibold">What do you fund?</h1>
+            <p className="mt-1 text-sm text-muted">Up to {MAX_CAUSES}.</p>
             <div className="mt-4 flex flex-wrap gap-2">
               {CAUSES.filter((x) => x.slug !== "other").map((x) => {
                 const on = c.causes.includes(x.slug);
@@ -108,8 +99,26 @@ export function Finder({ initial }: { initial: Criteria }) {
 
         {step === 2 && (
           <section>
-            <h1 className="mt-1 text-2xl font-semibold">About how much would you give?</h1>
-            <p className="mt-1 text-sm text-muted">Per organization. We use it to find opportunities your gift can move.</p>
+            <h1 className="mt-1 text-2xl font-semibold">How do you want to drive change?</h1>
+            <p className="mt-1 text-sm text-muted">Pick any, or skip.</p>
+            <div className="mt-4 grid gap-2 sm:grid-cols-2">
+              {APPROACHES.map((a) => (
+                <Choice
+                  key={a.id}
+                  on={c.approaches.includes(a.id)}
+                  title={a.label}
+                  help={a.help}
+                  onClick={() => set({ approaches: toggle<Approach>(c.approaches, a.id) })}
+                />
+              ))}
+            </div>
+          </section>
+        )}
+
+        {step === 3 && (
+          <section>
+            <h1 className="mt-1 text-2xl font-semibold">Typical grant size?</h1>
+            <p className="mt-1 text-sm text-muted">Per organization.</p>
             <div className="mt-4 grid gap-2 sm:grid-cols-2">
               {GIFT_BANDS.map((g) => (
                 <Choice
@@ -126,49 +135,10 @@ export function Finder({ initial }: { initial: Criteria }) {
           </section>
         )}
 
-        {step === 3 && (
-          <section>
-            <h1 className="mt-1 text-2xl font-semibold">What kind of funding?</h1>
-            <p className="mt-1 text-sm text-muted">Choose any that apply, or skip if you&apos;re flexible.</p>
-            <div className="mt-4 flex flex-wrap gap-2">
-              {FUNDING_TYPES.map((t) => (
-                <Pill
-                  key={t.id}
-                  on={c.types.includes(t.id)}
-                  onClick={() => set({ types: toggle<FundingType>(c.types, t.id) })}
-                >
-                  {t.label}
-                </Pill>
-              ))}
-            </div>
-          </section>
-        )}
-
         {step === 4 && (
           <section>
-            <h1 className="mt-1 text-2xl font-semibold">What size of organization?</h1>
-            <p className="mt-1 text-sm text-muted">By annual budget on the latest IRS Form 990.</p>
-            <div className="mt-4 grid gap-2">
-              {SIZES.map((s) => (
-                <Choice
-                  key={s.id}
-                  on={c.size === s.id}
-                  title={s.label}
-                  help={s.help}
-                  onClick={() => {
-                    set({ size: s.id });
-                    next();
-                  }}
-                />
-              ))}
-            </div>
-          </section>
-        )}
-
-        {step === 5 && (
-          <section>
             <h1 className="mt-1 text-2xl font-semibold">Any must-haves?</h1>
-            <p className="mt-1 text-sm text-muted">Opportunities that miss one go to the bottom. Skip if none.</p>
+            <p className="mt-1 text-sm text-muted">Optional.</p>
             <div className="mt-4 flex flex-wrap gap-2">
               {MUST_HAVES.map((m) => (
                 <Pill key={m.id} on={c.must.includes(m.id)} onClick={() => set({ must: toggle<MustHave>(c.must, m.id) })}>
@@ -190,11 +160,11 @@ export function Finder({ initial }: { initial: Criteria }) {
         </button>
         {step < STEPS ? (
           <button type="button" disabled={!canNext} onClick={next} className="btn-primary disabled:opacity-40">
-            {step === 3 && !c.types.length ? "Skip" : "Next"}
+            {step === 2 && !c.approaches.length ? "Skip" : "Next"}
           </button>
         ) : (
-          <button type="button" disabled={going} onClick={() => finish(c)} className="btn-primary disabled:opacity-60">
-            {going ? "Building your shortlist…" : "Show my shortlist"}
+          <button type="button" disabled={going} onClick={finish} className="btn-primary disabled:opacity-60">
+            {going ? "Finding…" : "Show matches"}
           </button>
         )}
       </div>

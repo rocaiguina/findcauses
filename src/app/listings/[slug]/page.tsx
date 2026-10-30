@@ -4,6 +4,7 @@ import { notFound } from "next/navigation";
 import { IrsFinancials } from "@/components/IrsFinancials";
 import { FundingOpportunities, MatchAside } from "@/components/OrgMatching";
 import { CauseBadge, StatusPill } from "@/components/OrgCard";
+import { SaveButton } from "@/components/Save";
 import {
   MissingSection,
   ProfileSection,
@@ -121,6 +122,7 @@ export default async function ListingPage({ params, searchParams }: Props) {
         }
         actions={
           <>
+            <SaveButton entryKey={`imported-${l.id}`} />
             {l.email && (
               <a href={`mailto:${l.email}`} className="btn-primary">
                 Message
