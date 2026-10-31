@@ -96,7 +96,7 @@ don't exist.
 
 ## Deploying (Netlify)
 
-Live at https://justcause-pr.netlify.app (Netlify site `justcause-pr`).
+Live at https://findcauses.netlify.app (Netlify site `findcauses`).
 
 There is no hosted database yet, so the deployed site runs on a **JSON snapshot** of the directory
 (`DATA_SOURCE=snapshot` is set in Netlify's environment):
