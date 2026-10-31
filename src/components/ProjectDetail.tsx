@@ -5,7 +5,7 @@ import { SaveButton } from "./Save";
 import { money, monthYear, placeName, tenure } from "@/lib/format";
 import { fundingTypeLabel } from "@/lib/funding";
 import { linkedinCompanySearch, linkedinPeopleSearch } from "@/lib/linkedin";
-import { ADDED_BY_JUSTCAUSE, isExample } from "@/lib/match";
+import { ADDED_BY_FINDCAUSES, isExample } from "@/lib/match";
 import type { ShortlistItem } from "@/lib/shortlist";
 import type { ImportedListing, Organization } from "@/lib/types";
 
@@ -74,7 +74,7 @@ export function ProjectDetail({
               Seeking funding
             </span>
           )}
-          {isExample(opp) && <ExamplePill title={e.example ? undefined : ADDED_BY_JUSTCAUSE} />}
+          {isExample(opp) && <ExamplePill title={e.example ? undefined : ADDED_BY_FINDCAUSES} />}
           {e.kind === "imported" && <StatusPill>Unclaimed listing</StatusPill>}
         </div>
         <div className="mt-4 flex flex-wrap gap-2">
@@ -129,7 +129,7 @@ export function ProjectDetail({
         ) : (
           <>
             <p className="text-sm leading-relaxed">{opp.need?.description}</p>
-            {opp.need?.example && !e.example && <p className="mt-2 text-xs text-muted">{ADDED_BY_JUSTCAUSE}</p>}
+            {opp.need?.example && !e.example && <p className="mt-2 text-xs text-muted">{ADDED_BY_FINDCAUSES}</p>}
           </>
         )}
       </Block>

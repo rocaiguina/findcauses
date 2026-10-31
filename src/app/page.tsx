@@ -5,7 +5,7 @@ import { SaveButton } from "@/components/Save";
 import { MID_SIZE_MAX_BUDGET, MID_SIZE_MIN_BUDGET } from "@/lib/config";
 import { money, placeName } from "@/lib/format";
 import { fundingTypeLabel } from "@/lib/funding";
-import { ADDED_BY_JUSTCAUSE, isExample, opportunitiesFor } from "@/lib/match";
+import { ADDED_BY_FINDCAUSES, isExample, opportunitiesFor } from "@/lib/match";
 import { listDirectory } from "@/lib/store";
 
 export const dynamic = "force-dynamic";
@@ -65,7 +65,7 @@ export default async function Home() {
                       <Link href={e.href} className="text-[15px] font-medium hover:underline underline-offset-4">
                         {opp.title}
                       </Link>
-                      {isExample(opp) && <ExamplePill title={e.example ? undefined : ADDED_BY_JUSTCAUSE} />}
+                      {isExample(opp) && <ExamplePill title={e.example ? undefined : ADDED_BY_FINDCAUSES} />}
                     </div>
                     <p className="text-sm text-muted">
                       {e.name} · {[e.city, placeName(e.state)].filter(Boolean).join(", ")} ·{" "}

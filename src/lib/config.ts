@@ -1,5 +1,5 @@
 /**
- * JustCause lists mid-size nonprofits, measured by total annual expenses
+ * FindCauses lists mid-size nonprofits, measured by total annual expenses
  * reported on the latest Form 990 (Part I, line 18).
  */
 export const MID_SIZE_MIN_BUDGET = 1_000_000;

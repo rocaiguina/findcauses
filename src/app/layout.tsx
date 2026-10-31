@@ -8,7 +8,7 @@ import "./globals.css";
 const inter = Inter({ variable: "--font-inter", subsets: ["latin"] });
 
 export const metadata: Metadata = {
-  title: { default: "JustCause — Mid-size nonprofits, funder-ready", template: "%s · JustCause" },
+  title: { default: "FindCauses — Mid-size nonprofits, funder-ready", template: "%s · FindCauses" },
   description:
     "A directory of mid-size U.S. nonprofits with mission, track record, networks, roadmap, Form 990 financials, board and stewardship in one place.",
 };
@@ -21,7 +21,7 @@ export default function RootLayout({ children }: Readonly<{ children: React.Reac
         <main className="flex-1">{children}</main>
         <footer className="mt-16 border-t border-line">
           <div className="container-page flex flex-col gap-4 py-8 text-sm text-muted sm:flex-row sm:items-center sm:justify-between">
-            <Link href="/" className="text-ink" aria-label="JustCause home">
+            <Link href="/" className="text-ink" aria-label="FindCauses home">
               <Logo />
             </Link>
             <nav className="flex flex-wrap gap-x-6 gap-y-2">

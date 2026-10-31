@@ -390,7 +390,7 @@ export function ApplicationForm() {
       <Step
         n={7}
         title="Financials from your Form 990"
-        hint="Copy the figures exactly from your most recent filed 990. We verify them against the uploaded PDF. JustCause lists organizations with $1M–$50M in total expenses."
+        hint="Copy the figures exactly from your most recent filed 990. We verify them against the uploaded PDF. FindCauses lists organizations with $1M–$50M in total expenses."
       >
         <div className="grid gap-5 sm:grid-cols-3">
           <Field name="fiscalYear" label="Fiscal year (tax year)" placeholder="2025" errors={errors} />

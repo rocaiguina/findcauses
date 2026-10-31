@@ -17,7 +17,7 @@ export type FundingNeed = {
   amount: number | null;
   timeframe: string | null;
   description: string;
-  /** Added by JustCause rather than posted by the organization; labeled "Example". */
+  /** Added by FindCauses rather than posted by the organization; labeled "Example". */
   example?: boolean;
 };
 

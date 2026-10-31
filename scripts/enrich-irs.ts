@@ -48,7 +48,7 @@ async function cachedGet<T>(url: string, cacheName: string): Promise<T | null> {
   if (existsSync(file)) return JSON.parse(readFileSync(file, "utf8")) as T;
   for (let attempt = 0; attempt < 4; attempt++) {
     await sleep(DELAY_MS * (attempt + 1) ** 2);
-    const res = await fetch(url, { headers: { "User-Agent": "JustCause directory (development import)" } });
+    const res = await fetch(url, { headers: { "User-Agent": "FindCauses directory (development import)" } });
     if (res.status === 404) {
       writeFileSync(file, "null");
       return null;

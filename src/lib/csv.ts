@@ -23,7 +23,7 @@ export function shortlistCsv(items: { opp: Opportunity; result?: MatchResult }[]
       i + 1,
       e.name,
       opp.title + (opp.implied ? " (no opportunity posted)" : ""),
-      e.example ? "yes" : opp.need?.example ? "added by JustCause" : "",
+      e.example ? "yes" : opp.need?.example ? "added by FindCauses" : "",
       [e.city, e.state].filter(Boolean).join(", "),
       e.approaches.map(approachLabel).join("; "),
       fundingTypeLabel(opp.type),
@@ -44,7 +44,7 @@ export function shortlistCsv(items: { opp: Opportunity; result?: MatchResult }[]
   return new Response("﻿" + csv, {
     headers: {
       "Content-Type": "text/csv; charset=utf-8",
-      "Content-Disposition": 'attachment; filename="justcause-shortlist.csv"',
+      "Content-Disposition": 'attachment; filename="findcauses-shortlist.csv"',
     },
   });
 }

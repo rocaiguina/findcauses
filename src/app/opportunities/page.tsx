@@ -11,7 +11,7 @@ import { CAUSES } from "@/lib/causes";
 import { describe, isAnswered, parseCriteria, toQuery } from "@/lib/criteria";
 import { money, placeName } from "@/lib/format";
 import { fundingTypeLabel } from "@/lib/funding";
-import { ADDED_BY_JUSTCAUSE, isExample, opportunitiesFor } from "@/lib/match";
+import { ADDED_BY_FINDCAUSES, isExample, opportunitiesFor } from "@/lib/match";
 import { buildShortlist, SHORTLIST_SIZE } from "@/lib/shortlist";
 import { getById, getImportedBySlug, listDirectory } from "@/lib/store";
 
@@ -124,7 +124,7 @@ export default async function ProjectsPage({ searchParams }: { searchParams: Pro
                         <div className="mt-1.5 flex flex-wrap items-center gap-1.5">
                           <MatchBadge result={item.result} />
                           {item.opp.implied && <StatusPill>No opportunity posted</StatusPill>}
-                          {isExample(item.opp) && <ExamplePill title={e.example ? undefined : ADDED_BY_JUSTCAUSE} />}
+                          {isExample(item.opp) && <ExamplePill title={e.example ? undefined : ADDED_BY_FINDCAUSES} />}
                         </div>
                       </div>
                     </Link>
@@ -148,7 +148,7 @@ export default async function ProjectsPage({ searchParams }: { searchParams: Pro
   );
 }
 
-/** Every opportunity a nonprofit posted (or JustCause added as an example), for the browse list. */
+/** Every opportunity a nonprofit posted (or FindCauses added as an example), for the browse list. */
 async function listAllOpportunities(): Promise<ListedOpportunity[]> {
   return (await listDirectory())
     .flatMap(opportunitiesFor)
@@ -167,6 +167,6 @@ async function listAllOpportunities(): Promise<ListedOpportunity[]> {
       amount: o.amount,
       timeframe: o.need?.timeframe ?? null,
       example: isExample(o),
-      exampleNote: o.entry.example ? undefined : ADDED_BY_JUSTCAUSE,
+      exampleNote: o.entry.example ? undefined : ADDED_BY_FINDCAUSES,
     }));
 }

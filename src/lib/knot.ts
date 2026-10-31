@@ -1,4 +1,4 @@
-// The JustCause knot: colored strands arrive from around the edge, meet in the middle and wind into a knot.
+// The FindCauses knot: colored strands arrive from around the edge, meet in the middle and wind into a knot.
 // Shared by the home animation and the logo, so both are drawn from the same geometry.
 
 export const KNOT_COLORS = ["#d8a62a", "#e9622e", "#7a2a6f", "#5266eb", "#8fb3f0", "#2f7d46", "#c7b5f3", "#8fca7a", "#b8433a"];

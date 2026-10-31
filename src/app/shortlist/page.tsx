@@ -8,7 +8,7 @@ import { describe, parseCriteria } from "@/lib/criteria";
 import { money, placeName, tenure } from "@/lib/format";
 import { fundingTypeLabel } from "@/lib/funding";
 import { linkedinCompanySearch, linkedinPeopleSearch } from "@/lib/linkedin";
-import { ADDED_BY_JUSTCAUSE, isExample } from "@/lib/match";
+import { ADDED_BY_FINDCAUSES, isExample } from "@/lib/match";
 import { loadSaved, parseIds } from "@/lib/savedShortlist";
 
 export const dynamic = "force-dynamic";
@@ -62,7 +62,7 @@ export default async function ShortlistPage({ searchParams }: { searchParams: Pr
                       {e.name}
                     </Link>
                     {result && <MatchBadge result={result} />}
-                    {isExample(opp) && <ExamplePill title={e.example ? undefined : ADDED_BY_JUSTCAUSE} />}
+                    {isExample(opp) && <ExamplePill title={e.example ? undefined : ADDED_BY_FINDCAUSES} />}
                   </div>
                   <p className="text-sm">
                     <span className="font-medium text-ink">{opp.title}</span>

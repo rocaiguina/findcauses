@@ -1,7 +1,7 @@
 // Example data so the funder flow can be demoed before real nonprofits post their own:
 // - fictional organizations with posted impact opportunities, flagged `example`;
 // - example impact opportunities on real imported listings, flagged `example` and labeled
-//   "added by JustCause, not posted by the organization". Amounts and timeframes are left unknown.
+//   "added by FindCauses, not posted by the organization". Amounts and timeframes are left unknown.
 //
 // Usage: npm run examples:load   (replaces existing examples)
 //        npm run examples:clear

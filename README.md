@@ -1,4 +1,4 @@
-# JustCause
+# FindCauses
 
 A directory of mid-size U.S. nonprofits ($1M–$50M in annual expenses per Form 990) built for funders —
 individual donors, foundations and corporate givers.

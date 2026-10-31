@@ -251,7 +251,7 @@ export const subscriptions = pgTable(
 
 /**
  * Impact opportunities attached to imported (unclaimed) listings. Until an organization claims its listing,
- * these are added by JustCause and flagged `example`, so they're labeled as not posted by the organization.
+ * these are added by FindCauses and flagged `example`, so they're labeled as not posted by the organization.
  */
 export const listingNeeds = pgTable(
   "listing_needs",

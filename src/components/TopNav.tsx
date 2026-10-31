@@ -134,7 +134,7 @@ export function TopNav() {
   return (
     <header ref={headerRef} className="sticky top-0 z-30 border-b border-line/70 bg-paper/90 backdrop-blur">
       <div className="container-page flex h-16 items-center gap-4">
-        <Link href="/" className="shrink-0 text-ink" aria-label="JustCause home">
+        <Link href="/" className="shrink-0 text-ink" aria-label="FindCauses home">
           <Logo />
         </Link>
 

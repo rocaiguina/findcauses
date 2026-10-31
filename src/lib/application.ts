@@ -90,7 +90,7 @@ export function parseApplication(fd: FormData): { data?: Parsed; file?: File; er
   const financials: Financials = { fiscalYear, ...nums };
 
   if (!errors.totalExpenses && (nums.totalExpenses < MID_SIZE_MIN_BUDGET || nums.totalExpenses > MID_SIZE_MAX_BUDGET))
-    errors.totalExpenses = `JustCause lists mid-size nonprofits with total expenses between ${moneyFull(
+    errors.totalExpenses = `FindCauses lists mid-size nonprofits with total expenses between ${moneyFull(
       MID_SIZE_MIN_BUDGET,
     )} and ${moneyFull(MID_SIZE_MAX_BUDGET)}.`;
   const functional = nums.programExpenses + nums.managementExpenses + nums.fundraisingExpenses;

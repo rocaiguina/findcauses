@@ -19,7 +19,7 @@ export async function fetchRulingDate(ein: string): Promise<string | null> {
   if (digits.length !== 9) return null;
   try {
     const res = await fetch(`${PROPUBLICA_API}/organizations/${digits}.json`, {
-      headers: { "User-Agent": "JustCause directory" },
+      headers: { "User-Agent": "FindCauses directory" },
       signal: AbortSignal.timeout(5000),
     });
     if (!res.ok) return null;

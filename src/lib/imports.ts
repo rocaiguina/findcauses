@@ -198,7 +198,7 @@ export function categorize({ name, tags, ntee }: { name: string; tags: string[];
   return "other";
 }
 
-/** Maps an IRS NTEE code (e.g. "A20", "W22") to a JustCause cause. */
+/** Maps an IRS NTEE code (e.g. "A20", "W22") to a FindCauses cause. */
 export function causeFromNtee(code: string | null | undefined): CauseSlug | undefined {
   if (!code) return undefined;
   const major = code[0]?.toUpperCase();
