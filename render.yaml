@@ -1,0 +1,26 @@
+# Render Blueprint for the Django backend (API + admin). In Render: New → Blueprint → pick this repo.
+# The Next.js site on Netlify proxies /api and /admin here (set BACKEND_URL there to this service's URL).
+services:
+  - type: web
+    name: findcauses-backend
+    runtime: python
+    rootDir: backend
+    plan: free
+    buildCommand: pip install -r requirements.txt && python manage.py collectstatic --noinput && python manage.py migrate --noinput
+    startCommand: gunicorn config.wsgi --bind 0.0.0.0:$PORT --workers 2 --timeout 60
+    healthCheckPath: /api/me
+    envVars:
+      - key: PYTHON_VERSION
+        value: 3.13.5
+      - key: DJANGO_SECRET_KEY
+        generateValue: true
+      - key: SITE_URL
+        value: https://findcauses.netlify.app
+      # Neon: the pooled connection string (host contains "-pooler").
+      - key: DATABASE_URL
+        sync: false
+      - key: RESEND_API_KEY
+        sync: false
+      # Until a domain is verified in Resend, onboarding@resend.dev only delivers to the Resend account's own email.
+      - key: EMAIL_FROM
+        value: FindCauses <onboarding@resend.dev>

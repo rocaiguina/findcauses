@@ -1,4 +1,5 @@
-import { CauseBadge, ExamplePill, StatusPill } from "./OrgCard";
+import { CertifiedPill } from "./CertifiedBadge";
+import { CauseBadge, StatusPill } from "./OrgCard";
 import { SaveButton } from "./Save";
 import {
   PersonRow,
@@ -102,7 +103,7 @@ export function OrgProfile({
         badges={
           <>
             <CauseBadge slug={org.cause} />
-            {org.example && <ExamplePill />}
+            {org.certified && <CertifiedPill />}
             {org.focusAreas.map((a) => (
               <span key={a} className="chip">
                 {a}

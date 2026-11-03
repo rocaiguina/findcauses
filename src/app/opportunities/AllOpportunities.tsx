@@ -2,7 +2,7 @@
 
 import Link from "next/link";
 import { useMemo, useState } from "react";
-import { Avatar, ExamplePill } from "@/components/OrgCard";
+import { Avatar } from "@/components/OrgCard";
 import { SaveButton } from "@/components/Save";
 import { approachLabel, type Approach } from "@/lib/approach";
 import { CAUSES } from "@/lib/causes";
@@ -23,8 +23,6 @@ export type ListedOpportunity = {
   type: FundingType;
   amount: number | null;
   timeframe: string | null;
-  example: boolean;
-  exampleNote?: string;
 };
 
 type Sort = "amount-desc" | "amount-asc" | "org";
@@ -122,7 +120,6 @@ export function AllOpportunities({ items }: { items: ListedOpportunity[] }) {
                   <Link href={i.href} className="text-[15px] font-medium leading-snug hover:underline underline-offset-4">
                     {i.title}
                   </Link>
-                  {i.example && <ExamplePill title={i.exampleNote} />}
                 </div>
                 <p className="text-sm text-muted">
                   {i.orgName} · {i.place}

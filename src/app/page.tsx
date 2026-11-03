@@ -1,23 +1,21 @@
 import Link from "next/link";
 import { RibbonArtwork } from "@/components/Artwork";
-import { ExamplePill } from "@/components/OrgCard";
 import { SaveButton } from "@/components/Save";
 import { MID_SIZE_MAX_BUDGET, MID_SIZE_MIN_BUDGET } from "@/lib/config";
 import { money, placeName } from "@/lib/format";
 import { fundingTypeLabel } from "@/lib/funding";
-import { ADDED_BY_FINDCAUSES, isExample, opportunitiesFor } from "@/lib/match";
+import { opportunitiesFor } from "@/lib/match";
 import { listDirectory } from "@/lib/store";
 
 export const dynamic = "force-dynamic";
 
 export default async function Home() {
   const entries = await listDirectory();
-  // Mid-size organizations' posted opportunities; real organizations before the fictional examples.
+  // Mid-size organizations' posted opportunities.
   const seeking = entries
     .filter((e) => e.budget == null || (e.budget >= MID_SIZE_MIN_BUDGET && e.budget <= MID_SIZE_MAX_BUDGET))
     .flatMap(opportunitiesFor)
     .filter((o) => !o.implied)
-    .sort((a, b) => Number(Boolean(a.entry.example)) - Number(Boolean(b.entry.example)))
     .slice(0, 6);
 
   return (
@@ -65,7 +63,6 @@ export default async function Home() {
                       <Link href={e.href} className="text-[15px] font-medium hover:underline underline-offset-4">
                         {opp.title}
                       </Link>
-                      {isExample(opp) && <ExamplePill title={e.example ? undefined : ADDED_BY_FINDCAUSES} />}
                     </div>
                     <p className="text-sm text-muted">
                       {e.name} · {[e.city, placeName(e.state)].filter(Boolean).join(", ")} ·{" "}

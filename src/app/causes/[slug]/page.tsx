@@ -39,8 +39,8 @@ export default async function CausePage({ params }: Props) {
       ) : (
         <div className="border-t border-ink/80 py-16 text-center">
           <p className="text-lg font-semibold">No organizations listed in this cause yet.</p>
-          <Link href="/apply" className="btn-primary mt-4">
-            List your nonprofit
+          <Link href="/for-nonprofits" className="btn-primary mt-4">
+            Claim your nonprofit&apos;s page
           </Link>
         </div>
       )}

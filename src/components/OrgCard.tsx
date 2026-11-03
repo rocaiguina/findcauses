@@ -2,6 +2,7 @@ import Link from "next/link";
 import { getCause } from "@/lib/causes";
 import { money, monthYear, tenure } from "@/lib/format";
 import type { DirectoryEntry } from "@/lib/types";
+import { CertifiedPill } from "./CertifiedBadge";
 import { SaveButton } from "./Save";
 
 export function CauseBadge({ slug }: { slug: string }) {
@@ -23,21 +24,6 @@ export function StatusPill({ children, title }: { children: React.ReactNode; tit
       className="inline-flex items-center gap-1.5 rounded-full border border-dashed border-accent/70 bg-accent/5 px-2.5 py-0.5 text-xs font-semibold text-accent"
     >
       {children}
-    </span>
-  );
-}
-
-export function ExamplePill({
-  title = "Fictional organization and opportunity, included to demonstrate the flow",
-}: {
-  title?: string;
-}) {
-  return (
-    <span
-      title={title}
-      className="inline-flex items-center rounded-full bg-[#5c3b96]/10 px-2 py-0.5 text-xs font-semibold text-[#5c3b96]"
-    >
-      Example
     </span>
   );
 }
@@ -103,9 +89,9 @@ export function OrgRow({ entry }: { entry: DirectoryEntry }) {
           <Link href={entry.href} className="text-[15px] font-medium leading-snug hover:underline underline-offset-4">
             {entry.name}
           </Link>
-          {entry.example && <ExamplePill />}
-          {entry.kind === "imported" && (
-            <span className="text-xs text-muted" title="Imported from a public directory; not yet claimed by the organization">
+          {entry.certified && <CertifiedPill />}
+          {!entry.claimed && (
+            <span className="text-xs text-muted" title="Not yet claimed by the organization">
               Unclaimed
             </span>
           )}

@@ -1,92 +1,66 @@
 import "server-only";
-import { and, eq } from "drizzle-orm";
-import { getDb } from "@/db";
-import { loadImported, loadImportedBySlug } from "@/db/imported";
-import { activeEin, insertOrganization, loadOrganizations, type Form990Upload, type NewOrganization } from "@/db/organizations";
-import { form990Files, organizations, subscriptions } from "@/db/schema";
+import { cookies } from "next/headers";
 import { inferApproaches } from "./approach";
 import { searchWords } from "./format";
 import { toEnglish } from "./imports";
-import { getApplication, getApplicationPdf, listApplications, saveApplication, saveSubscription } from "./inbox";
-import { readSnapshot } from "./snapshot";
-import type { DirectoryEntry, ImportedListing, Organization, OrgStatus } from "./types";
+import type { DirectoryEntry, ImportedListing, Me, Organization, ProfileForm } from "./types";
 
-// Two data sources: Postgres when a database URL is configured (local development), otherwise the
-// read-only JSON snapshot plus a Netlify Blobs inbox for submissions (the deployed site, for now).
-// DATA_SOURCE=snapshot forces the snapshot, so a stray local DATABASE_URL can't leak into a deploy.
-export const usingSnapshot =
-  process.env.DATA_SOURCE === "snapshot" || !(process.env.DATABASE_URL ?? process.env.NETLIFY_DB_URL);
+// Data comes from the Django backend (backend/). Server code calls it directly at BACKEND_URL; the browser
+// reaches the same API through this site's /api/* rewrite (next.config.ts), so session cookies stay first-party.
 
-const byName = (a: Organization, b: Organization) => a.name.localeCompare(b.name);
-const newestFirst = (a: Organization, b: Organization) => b.submittedAt.localeCompare(a.submittedAt);
+export const BACKEND_URL = (process.env.BACKEND_URL ?? "http://localhost:8000").replace(/\/$/, "");
 
-export async function listApproved(): Promise<Organization[]> {
-  if (usingSnapshot) return [...readSnapshot().organizations].sort(byName);
-  return (await loadOrganizations(getDb(), eq(organizations.status, "approved"))).sort(byName);
+async function api<T>(path: string, { auth = false }: { auth?: boolean } = {}): Promise<T | undefined> {
+  const headers: HeadersInit = { Accept: "application/json" };
+  // Forward the visitor's session so the backend knows who is signed in.
+  if (auth) headers.Cookie = (await cookies()).toString();
+  const res = await fetch(`${BACKEND_URL}/api/${path}`, { headers, cache: "no-store" });
+  if (res.status === 404) return undefined;
+  if (!res.ok) throw new Error(`Backend ${res.status} for /api/${path}`);
+  return res.json() as Promise<T>;
 }
 
-export async function listByStatus(status: OrgStatus): Promise<Organization[]> {
-  if (usingSnapshot) {
-    if (status === "approved") return [...readSnapshot().organizations].sort(newestFirst);
-    return status === "pending" ? (await listApplications()).sort(newestFirst) : [];
-  }
-  return (await loadOrganizations(getDb(), eq(organizations.status, status))).sort(newestFirst);
+type DirectoryPayload = { organizations: Organization[]; listings: ImportedListing[] };
+
+/** Everything the directory shows: published profiles, and IRS-based pages for organizations without one. */
+export async function listDirectory(): Promise<DirectoryEntry[]> {
+  const data = await api<DirectoryPayload>("directory");
+  if (!data) return [];
+  return [...data.organizations.map(profileEntry), ...data.listings.map(importedEntry)];
 }
 
 export async function getApprovedBySlug(slug: string): Promise<Organization | undefined> {
-  if (usingSnapshot) return readSnapshot().organizations.find((o) => o.slug === slug);
-  const [org] = await loadOrganizations(getDb(), and(eq(organizations.slug, slug), eq(organizations.status, "approved")));
-  return org;
-}
-
-const UUID = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
-
-export async function getById(id: string): Promise<Organization | undefined> {
-  if (!UUID.test(id)) return undefined; // avoid a Postgres cast error on malformed URLs
-  if (usingSnapshot) return readSnapshot().organizations.find((o) => o.id === id) ?? (await getApplication(id));
-  const [org] = await loadOrganizations(getDb(), eq(organizations.id, id));
-  return org;
-}
-
-export async function insert(org: NewOrganization, file: Form990Upload): Promise<string> {
-  if (usingSnapshot) return saveApplication(org, file);
-  return insertOrganization(getDb(), org, file);
-}
-
-export async function setStatus(id: string, status: OrgStatus, irsRulingDate?: string | null): Promise<void> {
-  if (usingSnapshot) throw new Error("Approving applications needs a database; the site is running on the snapshot.");
-  const updated = await getDb()
-    .update(organizations)
-    .set({ status, reviewedAt: new Date(), ...(irsRulingDate !== undefined && { irsRulingDate }) })
-    .where(eq(organizations.id, id))
-    .returning({ id: organizations.id });
-  if (!updated.length) throw new Error(`Organization ${id} not found`);
-}
-
-export async function einExists(ein: string): Promise<boolean> {
-  if (usingSnapshot)
-    return readSnapshot().organizations.some((o) => o.ein === ein) || (await listApplications()).some((o) => o.ein === ein);
-  const rows = await getDb().select({ id: organizations.id }).from(organizations).where(activeEin(ein)).limit(1);
-  return rows.length > 0;
-}
-
-export async function get990(orgId: string): Promise<{ fileName: string; data: Uint8Array } | undefined> {
-  if (usingSnapshot) return getApplicationPdf(orgId);
-  const [file] = await getDb().select().from(form990Files).where(eq(form990Files.orgId, orgId));
-  return file && { fileName: file.fileName, data: file.data };
-}
-
-export async function addSubscription(email: string, query: string): Promise<void> {
-  if (usingSnapshot) return saveSubscription(email, query);
-  await getDb().insert(subscriptions).values({ email, query }).onConflictDoNothing();
-}
-
-export async function listImported(): Promise<ImportedListing[]> {
-  return usingSnapshot ? readSnapshot().imported : loadImported(getDb());
+  return api<Organization>(`organizations/${encodeURIComponent(slug)}`);
 }
 
 export async function getImportedBySlug(slug: string): Promise<ImportedListing | undefined> {
-  return usingSnapshot ? readSnapshot().imported.find((l) => l.slug === slug) : loadImportedBySlug(getDb(), slug);
+  return api<ImportedListing>(`listings/${encodeURIComponent(slug)}`);
+}
+
+/** The signed-in person and the organizations they manage. */
+export async function getMe(): Promise<Me> {
+  return (await api<Me>("me", { auth: true })) ?? { user: null, claims: [] };
+}
+
+/** The profile form's values for an organization the signed-in person manages, or undefined if they don't. */
+export async function getProfileForm(slug: string): Promise<ProfileForm | undefined> {
+  const headers = { Accept: "application/json", Cookie: (await cookies()).toString() };
+  const res = await fetch(`${BACKEND_URL}/api/me/organizations/${encodeURIComponent(slug)}/profile`, {
+    headers,
+    cache: "no-store",
+  });
+  if (res.status === 401 || res.status === 403 || res.status === 404) return undefined;
+  if (!res.ok) throw new Error(`Backend ${res.status} for profile form`);
+  return res.json();
+}
+
+export async function addSubscription(email: string, query: string): Promise<void> {
+  const res = await fetch(`${BACKEND_URL}/api/subscriptions`, {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({ email, query }),
+  });
+  if (!res.ok) throw new Error(`Backend ${res.status} saving a subscription`);
 }
 
 export function profileEntry(o: Organization): DirectoryEntry {
@@ -115,10 +89,19 @@ export function profileEntry(o: Organization): DirectoryEntry {
       text: [o.tagline, o.mission, ...o.focusAreas, ...o.fundingNeeds.map((n) => n.title)].join(" "),
     }),
     partners: o.networks.map((n) => n.name),
-    example: o.example,
     irsSince: o.irsRulingDate,
+    claimed: o.claimed,
+    certified: o.certified,
     searchText: searchWords(
-      [o.name, o.tagline, o.mission, o.city, ...o.focusAreas, ...o.networks.map((n) => n.name)].join(" "),
+      [
+        o.name,
+        o.ein.replace(/\D/g, ""),
+        o.tagline,
+        o.mission,
+        o.city,
+        ...o.focusAreas,
+        ...o.networks.map((n) => n.name),
+      ].join(" "),
     ).join(" "),
   };
 }
@@ -143,7 +126,7 @@ export function importedEntry(l: ImportedListing): DirectoryEntry {
     id: l.id,
     href: `/listings/${l.slug}`,
     name: l.name,
-    summary: l.mission ?? (l.tags.length ? l.tags.join(" · ") : "Unclaimed listing imported from a public directory."),
+    summary: l.mission ?? (l.tags.length ? l.tags.join(" · ") : "IRS-registered nonprofit."),
     city: l.city ?? undefined,
     state: l.state,
     cause: l.cause,
@@ -161,15 +144,11 @@ export function importedEntry(l: ImportedListing): DirectoryEntry {
     }),
     partners: [],
     growth: revenueGrowth(l),
+    claimed: l.claimed,
+    certified: false,
     // The IRS name and an English rendering let funders search "Center for a New Economy" for a Spanish name.
     searchText: searchWords(
-      [l.name, toEnglish(l.name), l.irsName, l.mission, l.city, ...l.tags].filter(Boolean).join(" "),
+      [l.name, l.ein, toEnglish(l.name), l.irsName, l.mission, l.city, ...l.tags].filter(Boolean).join(" "),
     ).join(" "),
   };
-}
-
-/** Everything the directory shows: full profiles first-class, unclaimed listings alongside. */
-export async function listDirectory(): Promise<DirectoryEntry[]> {
-  const [profiles, imported] = await Promise.all([listApproved(), listImported()]);
-  return [...profiles.map(profileEntry), ...imported.map(importedEntry)];
 }

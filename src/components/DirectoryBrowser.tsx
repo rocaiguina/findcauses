@@ -8,7 +8,7 @@ import { searchWords } from "@/lib/format";
 import type { DirectoryEntry } from "@/lib/types";
 
 type Sort = "budget-desc" | "budget-asc" | "name" | "program-share" | "irs-tenure";
-type Kind = "" | "profile" | "imported";
+type Kind = "" | "certified" | "profile" | "imported";
 
 const PAGE = 30;
 
@@ -46,7 +46,7 @@ export function DirectoryBrowser({
     const filtered = entries.filter((o) => {
       if (cause && o.cause !== cause) return false;
       if (state && o.state !== state) return false;
-      if (kind && o.kind !== kind) return false;
+      if (kind === "certified" ? !o.certified : kind && o.kind !== kind) return false;
       if (withFinancials && o.budget == null) return false;
       if (seeking && !o.needs.length) return false;
       if (auditedOnly && !o.audited) return false;
@@ -130,9 +130,10 @@ export function DirectoryBrowser({
           ))}
         </select>
         <select aria-label="Listing type" className={selectPill(!!kind)} value={kind} onChange={(e) => update(setKind)(e.target.value as Kind)}>
-          <option value="">All listings</option>
+          <option value="">All organizations</option>
+          <option value="certified">Certified</option>
           <option value="profile">Full profiles</option>
-          <option value="imported">Unclaimed listings</option>
+          <option value="imported">IRS data only</option>
         </select>
         <button type="button" className={pill(withFinancials)} onClick={() => update(setWithFinancials)(!withFinancials)}>
           Has 990

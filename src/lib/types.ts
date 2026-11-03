@@ -17,8 +17,6 @@ export type FundingNeed = {
   amount: number | null;
   timeframe: string | null;
   description: string;
-  /** Added by FindCauses rather than posted by the organization; labeled "Example". */
-  example?: boolean;
 };
 
 /** Figures taken from the organization's most recent IRS Form 990. */
@@ -48,7 +46,7 @@ export type Stewardship = {
   restrictedFunds: string;
 };
 
-/** One row in the directory: either a full profile or an imported, unclaimed listing. */
+/** One row in the directory: either a full profile or a listing built from IRS data. */
 export type DirectoryEntry = {
   kind: "profile" | "imported";
   id: string;
@@ -68,8 +66,6 @@ export type DirectoryEntry = {
   programShare?: number;
   staff?: number;
   audited?: boolean;
-  /** Fictional demo organization. */
-  example?: boolean;
   /** Posted funding needs; unclaimed listings have none and imply general operating support. */
   needs: FundingNeed[];
   /** How the organization drives change, inferred from its name, description and IRS code. */
@@ -80,6 +76,10 @@ export type DirectoryEntry = {
   growth?: { fromYear: number; toYear: number; pct: number };
   /** IRS tax-exemption ruling date (YYYY-MM-DD), when known. */
   irsSince?: string;
+  /** Someone at the organization manages this page. */
+  claimed: boolean;
+  /** FindCauses Certified (see lib/certified.ts). */
+  certified: boolean;
   searchText: string;
 };
 
@@ -100,7 +100,6 @@ export type ImportedListing = {
   id: string;
   slug: string;
   name: string;
-  sources: ("pecunia" | "observatorio")[];
   city: string | null;
   state: string;
   cause: CauseSlug;
@@ -114,18 +113,20 @@ export type ImportedListing = {
   irsMatchScore: number | null;
   nteeCode: string | null;
   irsRulingDate: string | null;
-  /** Impact opportunities attached to the listing (examples until the organization claims it). */
+  /** Impact opportunities attached to the listing. */
   needs: FundingNeed[];
   /** Newest first. */
   filings: IrsFiling[];
-};
+  /** Set when the organization has published a full profile, which replaces this page. */
+  profileSlug: string | null;
+} & Standing;
 
 export type Organization = {
   id: string;
   slug: string;
   status: OrgStatus;
   submittedAt: string;
-  reviewedAt?: string;
+  reviewedAt?: string | null;
 
   name: string;
   tagline: string;
@@ -152,9 +153,47 @@ export type Organization = {
 
   /** IRS tax-exemption ruling date (YYYY-MM-DD), looked up by EIN. */
   irsRulingDate?: string;
-  /** Fictional demo organization, labeled "Example" everywhere. */
-  example?: boolean;
 
   /** Present when a Form 990 PDF is on file; the bytes live in `form990_files`. */
   form990?: { fileName: string };
+  /** When an admin verified the uploaded 990 (ISO timestamp). */
+  form990VerifiedAt?: string | null;
+  /** IRS Form 990 figures on record for its EIN, newest first. */
+  irsFilings?: IrsFiling[];
+} & Standing;
+
+/** Who manages a page and whether it's FindCauses Certified (see lib/certified.ts). */
+export type Standing = {
+  check: CertifiedCheck;
+  claimed: boolean;
+  certified: boolean;
+};
+
+export type CertifiedCheck = { claimed: boolean; profile: boolean; recent990: boolean };
+
+export type ClaimStatus = "pending" | "active" | "rejected";
+
+export type Me = {
+  user: { email: string } | null;
+  claims: {
+    id: string;
+    status: ClaimStatus;
+    method: "domain" | "review";
+    createdAt: string;
+    organization: {
+      id: string;
+      slug: string;
+      name: string;
+      profileStatus: "none" | "pending" | "published" | "rejected";
+      check: CertifiedCheck;
+    };
+  }[];
+};
+
+/** A profile as form values, for completing or editing it. */
+export type ProfileForm = {
+  organization: { slug: string; name: string };
+  values: Record<string, string>;
+  lists: Record<string, Record<string, string>[]>;
+  hasForm990: boolean;
 };

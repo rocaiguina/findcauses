@@ -1,6 +1,6 @@
 import type { Metadata } from "next";
 import Link from "next/link";
-import { notFound } from "next/navigation";
+import { notFound, redirect } from "next/navigation";
 import { IrsFinancials } from "@/components/IrsFinancials";
 import { FundingOpportunities, MatchAside } from "@/components/OrgMatching";
 import { CauseBadge, StatusPill } from "@/components/OrgCard";
@@ -23,14 +23,6 @@ export const dynamic = "force-dynamic";
 
 type Props = { params: Promise<{ slug: string }>; searchParams: Promise<{ m?: string }> };
 
-const SOURCES = {
-  pecunia: { label: "Pecunia Group nonprofit directory", url: "https://pecuniagroup.com/es/directorio-osfl/" },
-  observatorio: {
-    label: "Observatorio de Datos del Sector Social",
-    url: "https://observatoriodedatos.org/directorio-entidades",
-  },
-} as const;
-
 export async function generateMetadata({ params }: Props): Promise<Metadata> {
   const listing = await getImportedBySlug((await params).slug);
   return listing ? { title: listing.name, robots: { index: false } } : { title: "Not found" };
@@ -40,6 +32,7 @@ export default async function ListingPage({ params, searchParams }: Props) {
   const { m } = await searchParams;
   const l = await getImportedBySlug((await params).slug);
   if (!l) notFound();
+  if (l.profileSlug) redirect(`/organizations/${l.profileSlug}`);
   const entry = importedEntry(l);
   const similar = pickSimilar(await listDirectory(), { id: l.id, cause: l.cause, budget: entry.budget });
 
@@ -70,33 +63,18 @@ export default async function ListingPage({ params, searchParams }: Props) {
       aside={
         <>
           <MatchAside entry={entry} m={m} />
-          <div className="card p-4">
-            <p className="font-semibold">Is this your organization?</p>
-            <p className="mt-1 text-sm text-muted">
-              Claim it to show funders your track record, roadmap, board, stewardship and funding needs.
-            </p>
-            <Link href="/apply" className="btn-ghost mt-3 w-full">
-              Claim this listing
-            </Link>
-          </div>
-          <div className="card p-4 text-sm">
-            <p className="font-semibold">Where this listing came from</p>
-            <ul className="mt-2 space-y-1">
-              {l.sources.map((s) => (
-                <li key={s}>
-                  <a
-                    className="font-medium text-link"
-                    href={SOURCES[s].url}
-                    target="_blank"
-                    rel="noopener noreferrer"
-                  >
-                    {SOURCES[s].label}
-                  </a>
-                </li>
-              ))}
-            </ul>
-            <p className="mt-2 text-xs text-muted">Contact details are as published by the source and unverified.</p>
-          </div>
+          {!l.claimed && (
+            <div className="card p-4">
+              <p className="font-semibold">Is this your organization?</p>
+              <p className="mt-1 text-sm text-muted">
+                Claim this page to show funders your track record, roadmap, board, stewardship and funding needs.
+                It&apos;s free.
+              </p>
+              <Link href={`/listings/${l.slug}/claim`} className="btn-ghost mt-3 w-full">
+                Claim this page
+              </Link>
+            </div>
+          )}
           <SimilarOrgs entries={similar} />
         </>
       }
@@ -115,9 +93,11 @@ export default async function ListingPage({ params, searchParams }: Props) {
         badges={
           <>
             <CauseBadge slug={l.cause} />
-            <StatusPill title="Imported from a public directory; not yet claimed by the organization">
-              Unclaimed listing — not verified
-            </StatusPill>
+            {l.claimed ? (
+              <span className="text-xs text-muted">Claimed by the organization</span>
+            ) : (
+              <StatusPill title="Not yet claimed by the organization">Unclaimed</StatusPill>
+            )}
           </>
         }
         actions={
@@ -160,7 +140,7 @@ export default async function ListingPage({ params, searchParams }: Props) {
 
       {["Track record", "Board of directors", "Networks & partners", "Roadmap", "Stewardship & audit"].map((t) => (
         <MissingSection key={t} title={t}>
-          Appears once the organization claims its listing.
+          Appears once the organization completes its profile.
         </MissingSection>
       ))}
     </ProfileShell>

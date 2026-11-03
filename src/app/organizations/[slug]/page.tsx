@@ -27,7 +27,7 @@ export default async function OrganizationPage({ params, searchParams }: Props) 
   return (
     <OrgProfile
       org={org}
-      form990Href={org.form990 ? `/organizations/${org.slug}/990` : undefined}
+      form990Href={org.form990 ? `/api/organizations/${org.slug}/990` : undefined}
       similar={similar}
       asideTop={<MatchAside entry={entry} m={m} />}
       opportunities={<FundingOpportunities entry={entry} m={m} />}

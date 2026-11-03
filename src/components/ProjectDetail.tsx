@@ -1,11 +1,11 @@
 import Link from "next/link";
 import { MatchBadge, ReasonList } from "./Match";
-import { Avatar, CauseBadge, ExamplePill, StatusPill, initials } from "./OrgCard";
+import { CertifiedPill } from "./CertifiedBadge";
+import { Avatar, CauseBadge, StatusPill, initials } from "./OrgCard";
 import { SaveButton } from "./Save";
 import { money, monthYear, placeName, tenure } from "@/lib/format";
 import { fundingTypeLabel } from "@/lib/funding";
 import { linkedinCompanySearch, linkedinPeopleSearch } from "@/lib/linkedin";
-import { ADDED_BY_FINDCAUSES, isExample } from "@/lib/match";
 import type { ShortlistItem } from "@/lib/shortlist";
 import type { ImportedListing, Organization } from "@/lib/types";
 
@@ -69,13 +69,12 @@ export function ProjectDetail({
           <CauseBadge slug={e.cause} />
           {opp.implied ? (
             <StatusPill>No opportunity posted yet</StatusPill>
-          ) : opp.need?.example ? null : (
+          ) : (
             <span className="inline-flex rounded-full bg-black/[0.05] px-2 py-0.5 text-xs font-medium text-ink">
               Seeking funding
             </span>
           )}
-          {isExample(opp) && <ExamplePill title={e.example ? undefined : ADDED_BY_FINDCAUSES} />}
-          {e.kind === "imported" && <StatusPill>Unclaimed listing</StatusPill>}
+          {e.certified ? <CertifiedPill /> : !e.claimed && <StatusPill>Unclaimed</StatusPill>}
         </div>
         <div className="mt-4 flex flex-wrap gap-2">
           <SaveButton entryKey={`${e.kind}-${e.id}`} />
@@ -129,7 +128,6 @@ export function ProjectDetail({
         ) : (
           <>
             <p className="text-sm leading-relaxed">{opp.need?.description}</p>
-            {opp.need?.example && !e.example && <p className="mt-2 text-xs text-muted">{ADDED_BY_FINDCAUSES}</p>}
           </>
         )}
       </Block>
@@ -192,9 +190,6 @@ export function ProjectDetail({
             </a>
             {listing?.phone && <> or call {listing.phone}</>}.
           </p>
-        )}
-        {e.example && (
-          <p className="mt-2 text-xs text-muted">This is an example organization; its people are fictional and won&apos;t be on LinkedIn.</p>
         )}
       </Block>
     </article>

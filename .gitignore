@@ -47,3 +47,11 @@ next-env.d.ts
 
 # Local Netlify folder
 .netlify
+.neon
+.env.neon
+
+# Django backend
+backend/.env
+backend/.venv
+backend/staticfiles
+__pycache__/

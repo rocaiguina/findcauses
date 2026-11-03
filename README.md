@@ -8,68 +8,46 @@ financials, board of directors and stewardship. Organizations are grouped into t
 Economy, Fiscal Policy, Civil Rights, Energy & Infrastructure, Arts & Culture, Recreation & Sports, Public Health,
 Education, Housing, Disaster Relief, and Other (see `src/lib/causes.ts`).
 
+## How it's built
+
+- **`backend/`: Django** (Python 3.13, managed with `uv`). The database (Postgres on Neon), the admin at
+  `/admin` (our CMS: organizations, claims, profiles, 990 checks, users) and the JSON API at `/api/*`.
+- **Next.js** (this folder): the public site and the nonprofit dashboard. It reads the Django API, and proxies
+  `/api/*` and `/admin/*` to it (`next.config.ts`), so the sign-in session cookie stays on the site's domain.
+
+Hosting: Next.js on Netlify (`findcauses`), Django on Render (`render.yaml`), database on Neon, email via Resend.
+
 ## Running locally
 
-Requires Node 20+ and Postgres 14+ (e.g. `brew install postgresql@16`).
-
 ```bash
-npm install
-createdb justcause
-cp .env.example .env.local   # then set DATABASE_URL and ADMIN_PASSWORD
-npm run db:migrate           # create tables
-npm run dev
+createdb findcauses
+cd backend && cp .env.example .env && uv run python manage.py migrate
+uv run python manage.py load_directory ../data/directory.json   # organizations + IRS filings
+uv run python manage.py createsuperuser                          # your admin login
+uv run python manage.py runserver 8000
 ```
 
-## Database
+Then, in another terminal at the project root: `cp .env.example .env.local && npm install && npm run dev`, and
+open http://localhost:3000. With `EMAIL_DELIVERY=log`, sign-in emails are printed in the Django terminal.
 
-Postgres via [Drizzle ORM](https://orm.drizzle.team). Schema lives in `src/db/schema.ts`; SQL migrations
-are generated into `drizzle/` and should be committed.
+Backend tests: `cd backend && uv run python manage.py test`.
 
-| Table | Holds |
-| --- | --- |
-| `organizations` | Identity, contact, cause, mission, stewardship answers, review status |
-| `financials` | Form 990 figures, one row per fiscal year (profiles show the latest) |
-| `form990_files` | The uploaded 990 PDF (kept separate so listings never load file bytes) |
-| `board_members`, `milestones`, `impact_metrics`, `network_ties`, `roadmap_items` | Repeatable profile sections, ordered by `position` |
+## Nonprofits: claim, complete, get certified
 
-A partial unique index allows one active (pending or approved) listing per EIN; rejected organizations can
-reapply. Deleting an organization cascades to all of its rows.
+Modeled on "claim your business" review sites. Every organization confirmed against IRS records has a page.
 
-```bash
-npm run db:generate   # after editing schema.ts — writes a new migration
-npm run db:migrate    # apply pending migrations
-npm run db:studio     # browse data
-```
-
-## Imported listings (development only)
-
-To have real organizations to work with, the directory also shows **unclaimed listings** imported from
-two Puerto Rico directories, the
-[Pecunia Group directory](https://pecuniagroup.com/es/directorio-osfl/) and the
-[Observatorio de Datos](https://observatoriodedatos.org/directorio-entidades). Each listing is enriched
-with Form 990 summary figures from IRS data via
-[ProPublica Nonprofit Explorer](https://projects.propublica.org/nonprofits/api).
-
-They live in their own tables (`imported_orgs`, `irs_filings`), appear with an "Unclaimed" badge and a
-dashed card, and link to `/listings/[slug]`. Source snapshots and the ProPublica response cache are in
-`data/imports/` (gitignored).
-
-```bash
-npm run imports:load     # load data/imports/*.json into imported_orgs (safe to re-run)
-npm run imports:enrich   # match names to IRS records and store 990 figures (cached; add -- --recheck to redo)
-npm run imports:categorize  # re-sort listings into the causes after changing rules in src/lib/imports.ts
-npm run imports:clear    # remove all imported listings and IRS rows — run before production
-```
-
-Causes are assigned best-effort: the IRS NTEE code when it maps to one of the causes, otherwise keywords
-in the name (Spanish and English), otherwise the source's tags. Human-services organizations
-(shelters, elder care, food banks), which fit none of the causes, stay in "Other". Listings with no IRS figures show "990 not available yet".
-
-**Budgets** on imported listings are total functional expenses (Form 990 Part IX line 25, or 990-EZ line 17)
-from the most recent filing in ProPublica's data. Each listing links to its ProPublica record to verify.
-
-Name matching is conservative: a listing gets financials only when its normalized name scores ≥ 90 against
-an IRS record in Puerto Rico and clearly beats any other candidate. Matches should still be spot-checked.
+- **Claim** (`/for-nonprofits` → `/listings/[slug]/claim`): sign in with an emailed link (no passwords). An
+  email on the organization's website domain verifies the claim instantly; anything else (Gmail, a different
+  domain) waits in **Admin → Claims** for approval. Rules: `backend/directory/verification.py`.
+- **Complete the profile** (`/dashboard/[slug]/profile`): the full form, prefilled from IRS data. Saving
+  publishes it, and the profile replaces the basic IRS page.
+- **FindCauses Certified**: claimed + published profile + a Form 990 for one of the last 3 tax years (from IRS
+  data, or uploaded and verified by an admin). Checked live in `Organization.certified_check`, so it lapses on
+  its own when the 990 goes stale.
+- **Website badge** (`/badge/[slug]`): an image the dashboard gives as copy-paste embed code. It says
+  "Certified nonprofit" while they qualify and "Listed nonprofit" otherwise.
+- **New organizations** not in the directory apply at `/apply`; an admin publishes them with the **Publish
+  profile** action, which also verifies their uploaded 990 and activates their account.
 
 ## Funders: find, save, share
 
@@ -87,56 +65,17 @@ services) is inferred in `src/lib/approach.ts` from names, descriptions and IRS 
 overrides. Matching lives in `src/lib/match.ts`; the 6 matches come from `src/lib/shortlist.ts`.
 Email subscriptions are stored, but **sending the emails is not built yet**.
 
-### Example data
+## Deploying
 
-`npm run examples:load` adds 8 **fictional** organizations with 12 impact opportunities so the flow can be
-demoed; they're labeled "Example" everywhere. `npm run examples:clear` removes them. Examples use fictional
-organizations on purpose: attaching made-up asks to real nonprofits would send funders after requests that
-don't exist.
+- **Django on Render:** New → Blueprint → this repo (`render.yaml`). Set `DATABASE_URL` (Neon's pooled
+  connection string) and `RESEND_API_KEY`. Each deploy runs migrations. Create your admin with
+  `python manage.py createsuperuser` in the Render shell.
+- **Next.js on Netlify:** set `BACKEND_URL` (the Render service URL) and `SITE_URL`, then
+  `npx netlify-cli deploy --prod` (stop the dev server first: they share `.next`).
+- **Data:** `uv run python manage.py load_directory <file.json>` loads or refreshes organizations and IRS
+  filings without touching profiles or claims. Neon's project is linked in `neon.ts`.
+- **Email:** until a domain is verified in Resend, `onboarding@resend.dev` only delivers to the Resend account's
+  own address. Verify a domain and set `EMAIL_FROM` on Render.
 
-## Deploying (Netlify)
-
-Live at https://findcauses.netlify.app (Netlify site `findcauses`).
-
-There is no hosted database yet, so the deployed site runs on a **JSON snapshot** of the directory
-(`DATA_SOURCE=snapshot` is set in Netlify's environment):
-
-- Pages read `data/snapshot.json`, exported from your local Postgres. It is gitignored and bundled at build
-  time, so **deploy from your machine**, not from GitHub:
-
-  ```bash
-  npm run snapshot:export
-  npx netlify-cli deploy --prod
-  ```
-
-- Nonprofit applications (with their 990 PDF) and email subscriptions are saved as JSON in Netlify Blobs
-  (stores `applications` and `subscriptions`). `/admin` lists applications read-only; approving needs a database.
-- `ADMIN_PASSWORD` is set in Netlify's environment. View it with `npx netlify-cli env:get ADMIN_PASSWORD`.
-- Netlify functions accept request bodies up to about 6 MB, so larger 990 PDFs fail to upload on the live site.
-
-To switch to a hosted Postgres later, set `DATABASE_URL` in Netlify, remove `DATA_SOURCE`, and run the
-migrations and data load against it.
-
-## How it works
-
-| Route | Purpose |
-| --- | --- |
-| `/` | Landing page for funders |
-| `/organizations` | Directory with search, cause, budget band, state and audit filters |
-| `/organizations/[slug]` | Full profile; `/990` serves the uploaded Form 990 PDF |
-| `/causes`, `/causes/[slug]` | Browse by cause |
-| `/apply` | Nonprofit application — every section required, plus a 990 PDF upload |
-| `/admin` | Password-protected review queue: preview, approve or reject submissions |
-| `/find` | Five quick questions for funders (causes, gift size, funding type, organization size, must-haves) |
-| `/opportunities` | The shortlist: the 6 impact opportunities that fit best, why, and LinkedIn links to reach the people; `/opportunities/export` downloads it as CSV |
-| `/listings/[slug]` | Unclaimed (imported) listing profile |
-
-Submissions are validated server-side (EIN format, $1M–$50M budget band, functional expenses summing to the
-total, minimum board/track record/roadmap entries, real PDF) and stored as `pending` until approved.
-
-For deployment, point `DATABASE_URL` at a hosted Postgres and run `npm run db:migrate` as part of the
-release. 990 PDFs (≤20 MB) are stored in Postgres for now; move them to object storage (S3, R2, Vercel Blob)
-if volume grows.
-
-Key settings live in `src/lib/config.ts` (budget range, budget bands, upload limit) and
-`src/lib/causes.ts` (cause list and colors).
+Key settings: `src/lib/config.ts` (budget range), `src/lib/causes.ts` (causes and colors; keep in sync with
+`CAUSES` in `backend/directory/models.py`).

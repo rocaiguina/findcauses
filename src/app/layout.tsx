@@ -34,8 +34,8 @@ export default function RootLayout({ children }: Readonly<{ children: React.Reac
               <Link href="/causes" className="hover:text-ink">
                 Causes
               </Link>
-              <Link href="/apply" className="hover:text-ink">
-                List your nonprofit
+              <Link href="/for-nonprofits" className="hover:text-ink">
+                For nonprofits
               </Link>
             </nav>
             <p className="text-xs">© {new Date().getFullYear()} · Financial data from IRS Form 990 filings</p>

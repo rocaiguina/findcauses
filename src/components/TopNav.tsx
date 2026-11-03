@@ -76,16 +76,16 @@ function MegaMenu({ onNavigate }: { onNavigate: () => void }) {
         <div className="md:pl-8">
           <p className="text-[15px]">For nonprofits</p>
           <p className="text-sm text-white/60">Reach funders.</p>
-          <p className="mt-5 text-[11px] font-medium uppercase tracking-[0.14em] text-white/50">Get listed</p>
+          <p className="mt-5 text-[11px] font-medium uppercase tracking-[0.14em] text-white/50">Your organization</p>
           <ul className="mt-2">
             <li>
-              <Link href="/apply" onClick={onNavigate} className={link}>
-                List your nonprofit
+              <Link href="/for-nonprofits" onClick={onNavigate} className={link}>
+                Claim your page
               </Link>
             </li>
             <li>
-              <Link href="/apply" onClick={onNavigate} className={link}>
-                Post impact opportunities
+              <Link href="/dashboard" onClick={onNavigate} className={link}>
+                Sign in
               </Link>
             </li>
           </ul>
@@ -158,8 +158,8 @@ export function TopNav() {
         </nav>
 
         <div className="ml-auto hidden items-center gap-5 md:flex">
-          <Link href="/apply" className="text-[15px] text-ink/75 hover:text-ink">
-            List your nonprofit
+          <Link href="/for-nonprofits" className="text-[15px] text-ink/75 hover:text-ink">
+            For nonprofits
           </Link>
           <Link href="/find" className="btn-ghost !px-5">
             Find matches

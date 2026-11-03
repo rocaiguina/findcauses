@@ -1,11 +1,11 @@
 import Link from "next/link";
 import { HowYouMatch, MatchBadge, MatchCta } from "./Match";
-import { ExamplePill, StatusPill } from "./OrgCard";
+import { StatusPill } from "./OrgCard";
 import { ProfileSection, TimelineItem } from "./Profile";
 import { isAnswered, parseCriteria, toPrefs } from "@/lib/criteria";
 import { money } from "@/lib/format";
 import { fundingTypeLabel } from "@/lib/funding";
-import { ADDED_BY_FINDCAUSES, bestMatchFor, matchOpportunity, opportunitiesFor, type FunderPrefs } from "@/lib/match";
+import { bestMatchFor, matchOpportunity, opportunitiesFor, type FunderPrefs } from "@/lib/match";
 import type { DirectoryEntry } from "@/lib/types";
 
 /** Finder answers carried over from the shortlist as ?m=<query>, if any. */
@@ -58,15 +58,11 @@ export function FundingOpportunities({ entry, m }: { entry: DirectoryEntry; m?: 
                   <span className="flex flex-wrap items-center gap-2">
                     {opp.title}
                     {result && <MatchBadge result={result} />}
-                    {opp.need?.example && !entry.example && <ExamplePill title={ADDED_BY_FINDCAUSES} />}
                   </span>
                 }
                 subtitle={[fundingTypeLabel(opp.type), opp.need?.timeframe].filter(Boolean).join(" · ")}
               >
                 {opp.need?.description}
-                {opp.need?.example && !entry.example && (
-                  <span className="mt-1 block text-xs text-muted">{ADDED_BY_FINDCAUSES}</span>
-                )}
               </TimelineItem>
             );
           })}

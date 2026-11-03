@@ -1,0 +1,203 @@
+"""
+Validates the full-profile form the Next.js site posts (the same fields for a new application and for an
+organization completing or editing its claimed page). Error keys match the form's field names.
+"""
+
+import json
+import re
+from dataclasses import dataclass, field
+
+from django.conf import settings
+from django.utils import timezone
+
+from .models import CAUSES, FUNDING_TYPES
+
+MID_SIZE_MIN_BUDGET = 1_000_000
+MID_SIZE_MAX_BUDGET = 50_000_000
+STATES = (
+    "AL AK AZ AR CA CO CT DE DC FL GA HI ID IL IN IA KS KY LA ME MD MA MI MN MS MO MT NE NV NH NJ NM "
+    "NY NC ND OH OK OR PA PR RI SC SD TN TX UT VT VA WA WV WI WY"
+).split()
+EMAIL = re.compile(r"^[^\s@]+@[^\s@]+\.[^\s@]+$")
+
+NUMBER_FIELDS = {
+    "totalRevenue": "total_revenue",
+    "contributions": "contributions",
+    "programRevenue": "program_revenue",
+    "totalExpenses": "total_expenses",
+    "programExpenses": "program_expenses",
+    "managementExpenses": "management_expenses",
+    "fundraisingExpenses": "fundraising_expenses",
+    "totalAssets": "total_assets",
+    "netAssets": "net_assets",
+    "employees": "employees",
+    "volunteers": "volunteers",
+}
+
+# Repeatable sections: form key → (row keys, minimum rows, label used in messages).
+LISTS = {
+    "impactMetrics": (["label", "value"], 2, "impact metrics"),
+    "trackRecord": (["year", "title", "description"], 2, "track record milestones"),
+    "networks": (["name", "type", "description"], 1, "networks or partners"),
+    "roadmap": (["timeframe", "goal", "description"], 2, "roadmap goals"),
+    "board": (["name", "role", "affiliation"], 3, "board members"),
+}
+
+YES_NO = {
+    "independentAudit": ("independent_audit", "independent audit"),
+    "conflictOfInterestPolicy": ("conflict_of_interest_policy", "conflict of interest policy"),
+    "whistleblowerPolicy": ("whistleblower_policy", "whistleblower policy"),
+    "documentRetentionPolicy": ("document_retention_policy", "document retention policy"),
+}
+
+
+@dataclass
+class ParsedProfile:
+    fields: dict = field(default_factory=dict)
+    financials: dict = field(default_factory=dict)
+    lists: dict = field(default_factory=dict)
+    needs: list = field(default_factory=list)
+    ein: str = ""
+    file: object = None
+    errors: dict = field(default_factory=dict)
+
+
+def parse_profile(data, files, *, new_organization: bool, file_required: bool) -> ParsedProfile:
+    p = ParsedProfile()
+    e = p.errors
+
+    def text(key, label, max_len=2000):
+        v = str(data.get(key, "")).strip()
+        if not v:
+            e[key] = f"{label} is required."
+        elif len(v) > max_len:
+            e[key] = f"{label} must be under {max_len} characters."
+        return v
+
+    f = p.fields
+    f["name"] = text("name", "Organization name", 200)
+    f["tagline"] = text("tagline", "One-line summary", 160)
+    ein = text("ein", "EIN", 10)
+    if ein and not re.fullmatch(r"\d{2}-\d{7}", ein):
+        e["ein"] = "EIN must look like 12-3456789."
+    p.ein = ein.replace("-", "")
+    f["website"] = text("website", "Website", 300)
+    if f["website"] and not re.match(r"^https?://\S+\.\S+", f["website"]):
+        e["website"] = "Website must start with http:// or https://."
+    f["city"] = text("city", "City", 100)
+    f["state"] = text("state", "State", 2)
+    if f["state"] and f["state"] not in STATES:
+        e["state"] = "Choose a U.S. state or territory."
+    year = text("yearFounded", "Year founded", 4)
+    f["year_founded"] = int(year) if year.isdigit() else None
+    if year and not (f["year_founded"] and 1800 <= f["year_founded"] <= timezone.now().year):
+        e["yearFounded"] = "Enter a valid founding year."
+    f["geographic_scope"] = text("geographicScope", "Geographic scope", 200)
+    f["contact_name"] = text("contactName", "Contact name", 120)
+    f["contact_title"] = text("contactTitle", "Contact title", 120)
+    f["contact_email"] = text("contactEmail", "Contact email", 200)
+    if f["contact_email"] and not EMAIL.match(f["contact_email"]):
+        e["contactEmail"] = "Enter a valid email."
+    f["contact_phone"] = text("contactPhone", "Contact phone", 40)
+    f["cause"] = text("cause", "Primary cause", 40)
+    if f["cause"] and f["cause"] not in dict(CAUSES):
+        e["cause"] = "Choose one of the listed causes."
+    f["focus_areas"] = [s.strip() for s in text("focusAreas", "Focus areas", 300).split(",") if s.strip()][:6]
+    f["mission"] = text("mission", "Mission statement", 1200)
+
+    for key, (attr, label) in YES_NO.items():
+        v = data.get(key)
+        if v not in ("yes", "no"):
+            e[key] = f"Answer yes or no: {label}."
+        f[attr] = v == "yes"
+    f["auditor"] = text("auditor", "Auditor (or explanation)", 300)
+    f["funder_reporting"] = text("funderReporting", "Reporting to funders", 800)
+    f["impact_measurement"] = text("impactMeasurement", "Impact measurement", 800)
+    f["restricted_funds"] = text("restrictedFunds", "Restricted funds policy", 800)
+
+    fin = p.financials
+    fin["fiscal_year"] = text("fiscalYear", "Fiscal year", 4)
+    if fin["fiscal_year"] and not re.fullmatch(r"\d{4}", fin["fiscal_year"]):
+        e["fiscalYear"] = "Enter the 4-digit fiscal year."
+    for key, attr in NUMBER_FIELDS.items():
+        raw = re.sub(r"[$,\s]", "", str(data.get(key, "")))
+        try:
+            n = round(float(raw))
+        except ValueError:
+            n = None
+        if not raw:
+            e[key] = "Required."
+        elif n is None or (key != "netAssets" and n < 0):
+            e[key] = "Enter a valid amount."
+        fin[attr] = n or 0
+
+    # Organizations already in the directory may be any size; new applicants must be mid-size.
+    if new_organization and "totalExpenses" not in e:
+        if not MID_SIZE_MIN_BUDGET <= fin["total_expenses"] <= MID_SIZE_MAX_BUDGET:
+            e["totalExpenses"] = "FindCauses lists mid-size nonprofits with total expenses between $1,000,000 and $50,000,000."
+    functional = fin["program_expenses"] + fin["management_expenses"] + fin["fundraising_expenses"]
+    if "programExpenses" not in e and abs(functional - fin["total_expenses"]) > fin["total_expenses"] * 0.01:
+        e["programExpenses"] = "Program + management + fundraising should add up to total expenses (990 Part IX, line 25)."
+    if "contributions" not in e and fin["contributions"] + fin["program_revenue"] > fin["total_revenue"]:
+        e["contributions"] = "Contributions plus program revenue can't exceed total revenue."
+
+    for key, (keys, minimum, label) in LISTS.items():
+        rows = _json_rows(data.get(key))[:25]
+        clean = [{k: str((r or {}).get(k, "")).strip()[:600] for k in keys} for r in rows]
+        if len(clean) < minimum:
+            e[key] = f"Add at least {minimum} {label}."
+        elif any(not r[k] for r in clean for k in keys):
+            e[key] = f"Fill in every field for each of your {label}."
+        p.lists[key] = clean
+
+    types = dict(FUNDING_TYPES)
+    for r in _json_rows(data.get("fundingNeeds"))[:10]:
+        r = r or {}
+        try:
+            amount = round(float(re.sub(r"[$,\s]", "", str(r.get("amount", "")))))
+        except ValueError:
+            amount = None
+        p.needs.append(
+            {
+                "title": str(r.get("title", "")).strip()[:300],
+                "type": str(r.get("type", "")).strip(),
+                "amount": amount,
+                "timeframe": str(r.get("timeframe", "")).strip()[:100],
+                "description": str(r.get("description", "")).strip()[:600],
+            }
+        )
+    if not p.needs:
+        e["fundingNeeds"] = "Add at least 1 impact opportunity."
+    elif any(not n["title"] or not n["timeframe"] or not n["description"] for n in p.needs):
+        e["fundingNeeds"] = "Fill in every field for each impact opportunity."
+    elif any(n["type"] not in types for n in p.needs):
+        e["fundingNeeds"] = "Choose a funding type for each opportunity."
+    elif any(n["amount"] is None or n["amount"] <= 0 for n in p.needs):
+        e["fundingNeeds"] = "Enter the amount sought, in dollars, for each impact opportunity."
+
+    upload = files.get("form990")
+    if upload and upload.size:
+        if upload.size > settings.MAX_990_BYTES:
+            e["form990"] = "The 990 PDF must be under 20 MB."
+        elif not upload.name.lower().endswith(".pdf"):
+            e["form990"] = "The 990 must be a PDF file."
+        else:
+            head = upload.read(5)
+            upload.seek(0)
+            if head != b"%PDF-":
+                e["form990"] = "That file doesn't look like a valid PDF."
+            p.file = upload
+    elif file_required:
+        e["form990"] = "Upload your most recent Form 990 as a PDF."
+
+    if data.get("certify") != "on":
+        e["certify"] = "You must certify that the information is accurate."
+    return p
+
+
+def _json_rows(raw):
+    try:
+        rows = json.loads(raw or "[]")
+    except (TypeError, ValueError):
+        return []
+    return rows if isinstance(rows, list) else []

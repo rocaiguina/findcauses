@@ -2,13 +2,12 @@ import type { Metadata } from "next";
 import Link from "next/link";
 import { LoadSaved, RemoveButton, ShortlistActions } from "./ShortlistClient";
 import { MatchBadge, ReasonList } from "@/components/Match";
-import { Avatar, ExamplePill } from "@/components/OrgCard";
+import { Avatar } from "@/components/OrgCard";
 import { approachLabel } from "@/lib/approach";
 import { describe, parseCriteria } from "@/lib/criteria";
 import { money, placeName, tenure } from "@/lib/format";
 import { fundingTypeLabel } from "@/lib/funding";
 import { linkedinCompanySearch, linkedinPeopleSearch } from "@/lib/linkedin";
-import { ADDED_BY_FINDCAUSES, isExample } from "@/lib/match";
 import { loadSaved, parseIds } from "@/lib/savedShortlist";
 
 export const dynamic = "force-dynamic";
@@ -62,7 +61,6 @@ export default async function ShortlistPage({ searchParams }: { searchParams: Pr
                       {e.name}
                     </Link>
                     {result && <MatchBadge result={result} />}
-                    {isExample(opp) && <ExamplePill title={e.example ? undefined : ADDED_BY_FINDCAUSES} />}
                   </div>
                   <p className="text-sm">
                     <span className="font-medium text-ink">{opp.title}</span>

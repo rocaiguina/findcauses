@@ -10,7 +10,7 @@ const cell = (v: unknown) => {
 };
 
 const HEADER = [
-  "Rank", "Organization", "Impact opportunity", "Example", "Location", "Approach", "Funding type", "Amount sought",
+  "Rank", "Organization", "Impact opportunity", "Location", "Approach", "Funding type", "Amount sought",
   "Timeframe", "Match", "Why it fits", "Organization budget", "Budget year", "Revenue growth", "IRS-recognized since",
   "Profile", "LinkedIn: organization", "LinkedIn: people",
 ];
@@ -23,7 +23,6 @@ export function shortlistCsv(items: { opp: Opportunity; result?: MatchResult }[]
       i + 1,
       e.name,
       opp.title + (opp.implied ? " (no opportunity posted)" : ""),
-      e.example ? "yes" : opp.need?.example ? "added by FindCauses" : "",
       [e.city, e.state].filter(Boolean).join(", "),
       e.approaches.map(approachLabel).join("; "),
       fundingTypeLabel(opp.type),
