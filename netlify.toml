@@ -6,3 +6,28 @@
 
 [build.environment]
   NODE_VERSION = "22"
+
+# findcauses.org is the one public address; everything else redirects to it.
+[[redirects]]
+  from = "https://www.findcauses.org/*"
+  to = "https://findcauses.org/:splat"
+  status = 301
+  force = true
+
+[[redirects]]
+  from = "https://findcauses.com/*"
+  to = "https://findcauses.org/:splat"
+  status = 301
+  force = true
+
+[[redirects]]
+  from = "https://www.findcauses.com/*"
+  to = "https://findcauses.org/:splat"
+  status = 301
+  force = true
+
+[[redirects]]
+  from = "https://findcauses.netlify.app/*"
+  to = "https://findcauses.org/:splat"
+  status = 301
+  force = true

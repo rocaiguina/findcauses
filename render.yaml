@@ -15,7 +15,7 @@ services:
       - key: DJANGO_SECRET_KEY
         generateValue: true
       - key: SITE_URL
-        value: https://findcauses.netlify.app
+        value: https://findcauses.org
       # Neon: the pooled connection string (host contains "-pooler").
       - key: DATABASE_URL
         sync: false
