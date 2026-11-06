@@ -1,9 +1,6 @@
 import type { Metadata } from "next";
 import Link from "next/link";
-import { headers } from "next/headers";
 import { redirect } from "next/navigation";
-import { CertifiedChecklist } from "@/components/CertifiedBadge";
-import { CopyField } from "@/components/CopyField";
 import { SignOutButton } from "@/components/SignOutButton";
 import { getMe } from "@/lib/store";
 import type { Me } from "@/lib/types";
@@ -22,8 +19,8 @@ const STATUS: Record<Claim["status"], string> = {
 export default async function DashboardPage() {
   const me = await getMe();
   if (!me.user) redirect("/signin?next=/dashboard");
-  const h = await headers();
-  const origin = process.env.SITE_URL ?? `${h.get("x-forwarded-proto") ?? "https"}://${h.get("host")}`;
+  // Someone with a single organization goes straight to managing it.
+  if (me.claims.length === 1 && me.claims[0].status === "active") redirect(`/dashboard/${me.claims[0].organization.slug}`);
 
   return (
     <div className="container-page max-w-3xl py-12">
@@ -55,18 +52,16 @@ export default async function DashboardPage() {
 
       <ul className="mt-8 space-y-6">
         {me.claims.map((c) => (
-          <ClaimCard key={c.id} claim={c} origin={origin} />
+          <ClaimCard key={c.id} claim={c} />
         ))}
       </ul>
     </div>
   );
 }
 
-function ClaimCard({ claim: c, origin }: { claim: Claim; origin: string }) {
+function ClaimCard({ claim: c }: { claim: Claim }) {
   const org = c.organization;
   const pageHref = org.profileStatus === "published" ? `/organizations/${org.slug}` : `/listings/${org.slug}`;
-  const certified = org.check.claimed && org.check.profile && org.check.recent990;
-  const embed = `<a href="${origin}${pageHref}" target="_blank" rel="noopener"><img src="${origin}/badge/${org.slug}" alt="${org.name.replace(/"/g, "")} on FindCauses" width="220" height="56"></a>`;
 
   return (
     <li className="card p-6">
@@ -81,9 +76,9 @@ function ClaimCard({ claim: c, origin }: { claim: Claim; origin: string }) {
             {org.profileStatus === "pending" && " · profile submitted, awaiting review"}
           </p>
         </div>
-        {c.status === "active" && org.profileStatus !== "pending" && (
-          <Link href={`/dashboard/${org.slug}/profile`} className="btn-primary">
-            {org.profileStatus === "published" ? "Edit profile" : "Complete your profile"}
+        {c.status === "active" && (
+          <Link href={`/dashboard/${org.slug}`} className="btn-primary">
+            Manage
           </Link>
         )}
       </div>
@@ -92,36 +87,6 @@ function ClaimCard({ claim: c, origin }: { claim: Claim; origin: string }) {
         <p className="mt-4 text-sm text-muted">
           We&apos;ll confirm you work at {org.name} and email you, usually within 2 business days.
         </p>
-      )}
-
-      {c.status === "active" && (
-        <div className="mt-6 grid gap-6 border-t border-line pt-6 sm:grid-cols-2">
-          <div>
-            <p className="text-sm font-medium">{certified ? "You're FindCauses Certified" : "Get FindCauses Certified"}</p>
-            <div className="mt-3">
-              <CertifiedChecklist check={org.check} />
-            </div>
-            {!org.check.recent990 && (
-              <p className="mt-3 text-xs text-muted">
-                No 990 from the last 3 tax years in IRS data yet: upload your latest one in your profile and we&apos;ll
-                verify it.
-              </p>
-            )}
-          </div>
-          <div>
-            <p className="text-sm font-medium">Badge for your website</p>
-            {/* eslint-disable-next-line @next/next/no-img-element */}
-            <img src={`/badge/${org.slug}`} alt="" width={220} height={56} className="mt-3" />
-            <p className="mt-2 text-xs text-muted">
-              {certified
-                ? "Shows Certified for as long as you qualify."
-                : "Shows “Listed nonprofit” now and switches to Certified on its own once you qualify."}
-            </p>
-            <div className="mt-3">
-              <CopyField label="Embed code" value={embed} />
-            </div>
-          </div>
-        </div>
       )}
     </li>
   );

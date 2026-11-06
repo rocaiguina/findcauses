@@ -85,6 +85,9 @@ class Organization(models.Model):
     funder_reporting = models.TextField(blank=True)
     impact_measurement = models.TextField(blank=True)
     restricted_funds = models.TextField(blank=True)
+    profile_draft = models.JSONField(
+        default=dict, blank=True, help_text="Sections saved so far, in the form's own values. Private until the profile is complete."
+    )
     submitted_at = models.DateTimeField(null=True, blank=True)
     reviewed_at = models.DateTimeField(null=True, blank=True)
 

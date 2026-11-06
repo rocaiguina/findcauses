@@ -1,6 +1,6 @@
 """
 Validates the full-profile form the Next.js site posts (the same fields for a new application and for an
-organization completing or editing its claimed page). Error keys match the form's field names.
+organization completing or editing its claimed page, a section at a time). Error keys match the form's field names.
 """
 
 import json
@@ -49,6 +49,78 @@ YES_NO = {
     "whistleblowerPolicy": ("whistleblower_policy", "whistleblower policy"),
     "documentRetentionPolicy": ("document_retention_policy", "document retention policy"),
 }
+
+
+@dataclass(frozen=True)
+class Section:
+    """One part of the profile that an organization saves on its own."""
+
+    keys: tuple  # Form field names, which are also the error keys.
+    fields: tuple = ()  # Organization attributes it writes.
+    lists: tuple = ()  # Repeatable lists it writes.
+    financials: bool = False
+    needs: bool = False
+
+
+SECTIONS = {
+    "basics": Section(
+        ("name", "tagline", "ein", "website", "city", "state", "yearFounded", "geographicScope"),
+        fields=("name", "tagline", "website", "city", "state", "year_founded", "geographic_scope"),
+    ),
+    "mission": Section(
+        ("cause", "otherCauses", "focusAreas", "mission", "impactMetrics"),
+        fields=("cause", "other_causes", "focus_areas", "mission"),
+        lists=("impactMetrics",),
+    ),
+    "track-record": Section(
+        ("trackRecord", "networks", "roadmap"),
+        lists=("trackRecord", "networks", "roadmap"),
+    ),
+    "opportunities": Section(("fundingNeeds",), needs=True),
+    "financials": Section(("fiscalYear", *NUMBER_FIELDS, "form990"), financials=True),
+    "governance": Section(
+        ("board", *YES_NO, "auditor", "funderReporting", "impactMeasurement", "restrictedFunds"),
+        fields=(
+            *(attr for attr, _ in YES_NO.values()),
+            "auditor",
+            "funder_reporting",
+            "impact_measurement",
+            "restricted_funds",
+        ),
+        lists=("board",),
+    ),
+    "contact": Section(
+        ("contactName", "contactTitle", "contactEmail", "contactPhone", "certify"),
+        fields=("contact_name", "contact_title", "contact_email", "contact_phone"),
+    ),
+}
+LIST_KEYS = (*LISTS, "fundingNeeds")
+
+
+def submit_section(form: dict, section: str, data) -> None:
+    """Copies one section's submitted values into the form's values and lists."""
+    for key in SECTIONS[section].keys:
+        if key in LIST_KEYS:
+            form["lists"][key] = _json_rows(data.get(key))
+        elif key == "otherCauses":
+            form["values"][key] = ",".join(data.getlist(key) if hasattr(data, "getlist") else data.get(key, []))
+        elif key != "form990":
+            form["values"][key] = str(data.get(key, ""))
+
+
+def parse_form(form: dict, files, *, certified: bool) -> "ParsedProfile":
+    """Validates a whole profile held as form values. `certified`: already attested, so it isn't asked again."""
+    data = {**form["values"], **{k: json.dumps(v) for k, v in form["lists"].items()}}
+    data["otherCauses"] = [c for c in form["values"].get("otherCauses", "").split(",") if c]
+    if certified:
+        data["certify"] = "on"
+    return parse_profile(data, files, new_organization=False, file_required=False)
+
+
+def section_status(form: dict, *, certified: bool) -> dict:
+    """Which sections are complete, as {section: bool}."""
+    errors = parse_form(form, {}, certified=certified).errors
+    return {name: not any(k in errors for k in s.keys) for name, s in SECTIONS.items()}
 
 
 @dataclass

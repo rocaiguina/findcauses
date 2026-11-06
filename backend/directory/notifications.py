@@ -70,3 +70,22 @@ def claim_decided(claim: Claim) -> None:
             "See your dashboard",
             f"{settings.SITE_URL}/dashboard",
         )
+
+
+def _tell_staff(subject: str, lines: list[str], org) -> None:
+    url = f"{settings.SITE_URL}/admin/directory/organization/{org.pk}/change/"
+    for email in User.objects.filter(is_staff=True, is_active=True).values_list("email", flat=True):
+        _send(email, subject, lines, "Open the organization", url)
+
+
+def profile_published(org) -> None:
+    """A completed profile goes live on its own; this tells staff so they can look it over."""
+    _tell_staff(f"Profile published: {org.name}", [f"{org.name} completed its profile, and it's now live."], org)
+
+
+def form990_uploaded(org) -> None:
+    _tell_staff(
+        f"990 to verify: {org.name}",
+        [f"{org.name} uploaded a Form 990. Check it against their figures, then use the Publish action to mark it verified."],
+        org,
+    )

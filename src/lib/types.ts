@@ -199,9 +199,13 @@ export type Me = {
   }[];
 };
 
-/** A profile as form values, for completing or editing it. */
+/** A profile as its managers see it: form values, saved draft included. */
 export type ProfileForm = {
-  organization: { slug: string; name: string };
+  organization: { slug: string; name: string; ein: string };
+  profileStatus: Me["claims"][number]["organization"]["profileStatus"];
+  check: CertifiedCheck;
+  /** Which sections are complete. The profile publishes itself when all of them are. */
+  sections: Record<string, boolean>;
   values: Record<string, string>;
   lists: Record<string, Record<string, string>[]>;
   hasForm990: boolean;

@@ -9,7 +9,18 @@ from django.utils import timezone
 from accounts.models import SignInLink, User
 
 from .models import Claim, Form990Upload, IrsFiling, Organization
+from .profile_form import SECTIONS, parse_profile
 from .verification import email_matches_website
+
+
+SECTION_NAMES = ["basics", "mission", "track-record", "opportunities", "financials", "governance", "contact"]
+
+
+def save_all_sections(client, slug="test-org", **overrides):
+    """Saves every section in turn and returns the last response, as a nonprofit would."""
+    for name in SECTION_NAMES:
+        res = client.post(f"/api/me/organizations/{slug}/profile/{name}", profile_form(**overrides))
+    return res
 
 
 def profile_form(**overrides):
@@ -97,7 +108,7 @@ class NonprofitFlowTests(TestCase):
         self.assertEqual(res.json()["status"], "active")
         self.assertFalse(self.org.is_certified)
 
-        res = self.client.post("/api/me/organizations/test-org/profile", profile_form())
+        res = save_all_sections(self.client)
         self.assertEqual(res.status_code, 200, res.content)
         self.org.refresh_from_db()
         self.assertEqual(self.org.profile_status, Organization.Profile.PUBLISHED)
@@ -108,21 +119,21 @@ class NonprofitFlowTests(TestCase):
         self.sign_in("ana@gmail.com")
         res = self.client.post("/api/listings/test-org/claim", {"name": "Ana", "role": "ED"}, content_type="application/json")
         self.assertEqual(res.json()["status"], "pending")
-        res = self.client.post("/api/me/organizations/test-org/profile", profile_form())
+        res = self.client.post("/api/me/organizations/test-org/profile/basics", profile_form())
         self.assertEqual(res.status_code, 403)
 
     def test_stale_990_is_not_certified(self):
         self.org.filings.update(tax_year=timezone.now().year - 6)
         self.sign_in("ana@testorg.org")
         self.client.post("/api/listings/test-org/claim", {"name": "Ana", "role": "ED"}, content_type="application/json")
-        self.client.post("/api/me/organizations/test-org/profile", profile_form())
+        save_all_sections(self.client)
         check = Organization.objects.get(pk=self.org.pk).certified_check()
         self.assertEqual(check, {"claimed": True, "profile": True, "recent990": False})
 
     def test_profile_rejects_a_different_ein(self):
         self.sign_in("ana@testorg.org")
         self.client.post("/api/listings/test-org/claim", {"name": "Ana", "role": "ED"}, content_type="application/json")
-        res = self.client.post("/api/me/organizations/test-org/profile", profile_form(ein="12-3456789"))
+        res = self.client.post("/api/me/organizations/test-org/profile/basics", profile_form(ein="12-3456789"))
         self.assertEqual(res.status_code, 422)
         self.assertIn("ein", res.json()["errors"])
 
@@ -161,7 +172,7 @@ class MultipleCausesTests(TestCase):
         self.client.force_login(User.objects.get(email="ana@testorg.org"))
 
     def test_profile_saves_other_causes_and_the_api_lists_primary_first(self):
-        res = self.client.post("/api/me/organizations/test-org/profile", profile_form(otherCauses=["civil-rights", "economy", "civil-rights"]))
+        res = save_all_sections(self.client, otherCauses=["civil-rights", "economy", "civil-rights"])
         self.assertEqual(res.status_code, 200, res.content)
         self.org.refresh_from_db()
         self.assertEqual(self.org.other_causes, ["civil-rights"])
@@ -171,13 +182,13 @@ class MultipleCausesTests(TestCase):
         self.assertEqual(form["values"]["otherCauses"], "civil-rights")
 
     def test_other_causes_are_optional_and_listings_have_causes(self):
-        self.assertEqual(self.client.post("/api/me/organizations/test-org/profile", profile_form()).status_code, 200)
+        self.assertEqual(save_all_sections(self.client).status_code, 200)
         self.org.refresh_from_db()
         self.assertEqual(self.org.other_causes, [])
         self.assertEqual(self.client.get("/api/listings/test-org").json()["causes"], ["economy"])
 
     def test_an_unknown_cause_is_rejected(self):
-        res = self.client.post("/api/me/organizations/test-org/profile", profile_form(otherCauses=["made-up"]))
+        res = self.client.post("/api/me/organizations/test-org/profile/mission", profile_form(otherCauses=["made-up"]))
         self.assertEqual(res.status_code, 422)
         self.assertIn("otherCauses", res.json()["errors"])
 
@@ -291,6 +302,113 @@ class AdminPagesTests(TestCase):
         claim = Claim.objects.create(user=user, organization=self.org, claimant_name="Ana", claimant_role="ED")
         self.assertEqual(self.client.get(f"/admin/directory/claim/{claim.pk}/change/").status_code, 200)
         self.assertEqual(self.client.get(f"/admin/accounts/user/{user.pk}/change/").status_code, 200)
+
+
+@override_settings(EMAIL_DELIVERY="log", SITE_URL="http://testserver")
+class ManageProfileTests(TestCase):
+    def setUp(self):
+        self.org = Organization.objects.create(slug="test-org", name="Test Org", ein="660000001", mission="IRS mission", website="https://testorg.org")
+        IrsFiling.objects.create(organization=self.org, tax_year=timezone.now().year - 2, form_type="990", total_revenue=5)
+        self.user = User.objects.create(email="ana@testorg.org")
+        self.claim = Claim.objects.create(user=self.user, organization=self.org, status=Claim.Status.ACTIVE)
+        self.client.force_login(self.user)
+
+    def save(self, section, **overrides):
+        return self.client.post(f"/api/me/organizations/test-org/profile/{section}", profile_form(**overrides))
+
+    def form(self):
+        return self.client.get("/api/me/organizations/test-org/profile").json()
+
+    def test_every_validation_error_belongs_to_a_section(self):
+        errors = parse_profile({}, {}, new_organization=False, file_required=True).errors
+        keys = {k for s in SECTIONS.values() for k in s.keys}
+        self.assertEqual(set(errors) - keys, set())
+        attrs = {a for s in SECTIONS.values() for a in s.fields}
+        self.assertEqual(set(parse_profile({}, {}, new_organization=False, file_required=False).fields) - attrs, set())
+
+    def test_a_fresh_page_has_nothing_complete(self):
+        self.assertEqual(set(self.form()["sections"].values()), {False})
+
+    def test_a_draft_stays_private_until_every_section_is_done(self):
+        self.assertEqual(self.save("mission", mission="Draft mission").status_code, 200)
+        form = self.form()
+        self.assertTrue(form["sections"]["mission"])
+        self.assertFalse(form["sections"]["basics"])
+        self.assertEqual(form["values"]["mission"], "Draft mission")
+
+        self.client.logout()
+        listing = self.client.get("/api/listings/test-org").json()
+        self.assertEqual(listing["mission"], "IRS mission")
+        self.assertEqual(self.client.get("/api/organizations/test-org").status_code, 404)
+        self.client.force_login(self.user)
+        self.org.refresh_from_db()
+        self.assertEqual(self.org.profile_status, Organization.Profile.NONE)
+
+    def test_the_last_section_publishes_and_clears_the_draft(self):
+        for name in SECTION_NAMES[:-1]:
+            res = self.save(name, mission="Final mission")
+            self.assertEqual(res.status_code, 200, res.content)
+            self.assertFalse(res.json()["publishedNow"])
+        with patch("directory.notifications.send") as send:
+            User.objects.create_superuser("admin@findcauses.test", "a-long-test-password")
+            res = self.save("contact")
+        self.assertTrue(res.json()["publishedNow"])
+        self.assertEqual(send.call_args.args[1], "Profile published: Test Org")
+        self.org.refresh_from_db()
+        self.assertEqual(self.org.profile_status, Organization.Profile.PUBLISHED)
+        self.assertEqual(self.org.mission, "Final mission")
+        self.assertEqual(self.org.profile_draft, {})
+        self.assertEqual(self.client.get("/api/organizations/test-org").json()["mission"], "Final mission")
+        self.assertEqual(set(self.form()["sections"].values()), {True})
+
+    def test_an_invalid_section_saves_nothing_and_only_reports_its_own_errors(self):
+        res = self.save("financials", totalExpenses="999", certify="")
+        self.assertEqual(res.status_code, 422)
+        self.assertEqual(set(res.json()["errors"]), {"programExpenses"})
+        self.assertFalse(self.form()["sections"]["financials"])
+
+    def test_certifying_is_required_for_a_new_profile(self):
+        res = self.save("contact", certify="")
+        self.assertIn("certify", res.json()["errors"])
+
+    def test_once_published_a_section_goes_live_alone(self):
+        save_all_sections(self.client)
+        res = self.save("opportunities", fundingNeeds=json.dumps([{"title": "New need", "type": "program", "amount": "5000", "timeframe": "2028", "description": "D"}]))
+        self.assertEqual(res.status_code, 200, res.content)
+        self.assertFalse(res.json()["publishedNow"])
+        api = self.client.get("/api/organizations/test-org").json()
+        self.assertEqual([n["title"] for n in api["fundingNeeds"]], ["New need"])
+        self.assertEqual(api["tagline"], "Tagline")
+        self.assertEqual(len(api["board"]), 3)
+
+    def test_a_published_profile_can_be_edited_without_certifying_again_elsewhere(self):
+        save_all_sections(self.client)
+        self.assertEqual(self.save("basics", tagline="Updated", certify="").status_code, 200)
+        self.assertEqual(self.client.get("/api/organizations/test-org").json()["tagline"], "Updated")
+
+    def test_uploading_a_990_marks_it_for_verifying(self):
+        save_all_sections(self.client)
+        Form990Upload.objects.create(organization=self.org, file_name="old.pdf", data=b"%PDF-1.4", verified_at=timezone.now())
+        pdf = io.BytesIO(b"%PDF-1.4 new")
+        pdf.name = "990.pdf"
+        User.objects.create_superuser("admin@findcauses.test", "a-long-test-password")
+        with patch("directory.notifications.send") as send:
+            res = self.client.post("/api/me/organizations/test-org/profile/financials", {**profile_form(), "form990": pdf})
+        self.assertEqual(res.status_code, 200, res.content)
+        self.assertEqual(send.call_args.args[1], "990 to verify: Test Org")
+        upload = Form990Upload.objects.get(organization=self.org)
+        self.assertEqual((upload.file_name, upload.verified_at), ("990.pdf", None))
+
+    def test_a_profile_under_review_cant_be_edited(self):
+        for status in (Organization.Profile.PENDING, Organization.Profile.REJECTED):
+            Organization.objects.filter(pk=self.org.pk).update(profile_status=status)
+            self.assertEqual(self.save("basics").status_code, 409)
+
+    def test_an_unknown_section_is_404_and_others_cant_save(self):
+        self.assertEqual(self.save("nope").status_code, 404)
+        self.client.force_login(User.objects.create(email="other@gmail.com"))
+        self.assertEqual(self.save("basics").status_code, 403)
+        self.assertEqual(self.client.get("/api/me/organizations/test-org/profile").status_code, 403)
 
 
 class DomainMatchTests(TestCase):

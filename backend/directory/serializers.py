@@ -151,6 +151,17 @@ def profile(org: Organization) -> dict:
     }
 
 
+def editable_form(org: Organization) -> dict:
+    """What its managers edit: the live values, with any saved draft on top."""
+    form = form_values(org)
+    draft = org.profile_draft or {}
+    return {
+        **form,
+        "values": {**form["values"], **draft.get("values", {})},
+        "lists": {**form["lists"], **draft.get("lists", {})},
+    }
+
+
 def form_values(org: Organization) -> dict:
     """The profile as the form's field values, for prefilling an edit (or a first profile from IRS data)."""
     fin = next(iter(org.financials.all()), None)

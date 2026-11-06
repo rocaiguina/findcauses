@@ -20,7 +20,7 @@ from .models import (
     RoadmapItem,
     Subscription,
 )
-from .profile_form import parse_profile
+from .profile_form import SECTIONS, parse_form, parse_profile, section_status, submit_section
 from .verification import email_matches_website
 
 SIGN_IN_REQUIRED = Response({"error": "Sign in first."}, status=401)
@@ -125,22 +125,67 @@ def _managed(request, slug):
     )
 
 
-@api_view(["GET", "POST"])
+@api_view(["GET"])
 def managed_profile(request, slug):
-    """GET: the profile form's current values. POST: save and publish the profile."""
+    """The profile as its managers see it: form values, and which sections are complete."""
     org = _managed(request, slug)
     if not org:
         return Response({"error": "You don't manage this organization."}, status=403)
-    if request.method == "GET":
-        return Response({"organization": {"slug": org.slug, "name": org.name}, **serializers.form_values(org)})
+    form = serializers.editable_form(org)
+    return Response(
+        {
+            "organization": {"slug": org.slug, "name": org.name, "ein": serializers._ein(org)},
+            "profileStatus": org.profile_status,
+            "check": org.certified_check(),
+            "sections": section_status(form, certified=org.has_profile),
+            **form,
+        }
+    )
 
-    parsed = parse_profile(request.data, request.FILES, new_organization=False, file_required=False)
-    if not parsed.errors and org.ein and parsed.ein != org.ein:
+
+@api_view(["POST"])
+def save_profile_section(request, slug, section):
+    """
+    Saves one section. Until the profile is complete sections stay in a private draft, and the IRS page stays up;
+    the save that completes it publishes everything. After that, each save goes live on its own.
+    """
+    org = _managed(request, slug)
+    if not org:
+        return Response({"error": "You don't manage this organization."}, status=403)
+    if section not in SECTIONS:
+        raise Http404
+    if org.profile_status not in (Organization.Profile.NONE, Organization.Profile.PUBLISHED):
+        return Response({"error": "This profile is with our team, so it can't be edited right now."}, status=409)
+
+    form = serializers.editable_form(org)
+    submit_section(form, section, request.data)
+    files = request.FILES if section == "financials" else {}
+    parsed = parse_form(form, files, certified=org.has_profile)
+    if org.ein and parsed.ein != org.ein:
         parsed.errors["ein"] = "The EIN doesn't match IRS records for this organization."
-    if parsed.errors:
-        return Response({"errors": parsed.errors}, status=422)
-    _save_profile(org, parsed, status=Organization.Profile.PUBLISHED)
-    return Response({"slug": org.slug})
+    errors = {k: v for k, v in parsed.errors.items() if k in SECTIONS[section].keys}
+    if errors:
+        return Response({"errors": errors}, status=422)
+
+    published_now = False
+    with transaction.atomic():
+        if parsed.file:
+            _save_990(org, parsed.file)
+        if org.has_profile:
+            _write_sections(org, parsed, [section])
+            org.save()
+        elif parsed.errors:
+            org.profile_draft = {"values": form["values"], "lists": form["lists"]}
+            org.save(update_fields=["profile_draft", "updated_at"])
+        else:
+            org.profile_draft = {}
+            _save_profile(org, parsed, status=Organization.Profile.PUBLISHED)
+            published_now = True
+    if published_now:
+        notifications.profile_published(org)
+    if parsed.file:
+        notifications.form990_uploaded(org)
+    return Response({"published": org.has_profile, "publishedNow": published_now})
 
 
 @api_view(["POST"])
@@ -175,7 +220,7 @@ def apply(request):
     return Response({"slug": org.slug}, status=201)
 
 
-SECTIONS = {
+LIST_MODELS = {
     "impactMetrics": ImpactMetric,
     "trackRecord": Milestone,
     "networks": NetworkTie,
@@ -184,25 +229,37 @@ SECTIONS = {
 }
 
 
+def _write_sections(org, parsed, names):
+    """Copies the named sections onto the organization and its related rows. The caller saves `org`."""
+    for section in (SECTIONS[n] for n in names):
+        for attr in section.fields:
+            setattr(org, attr, parsed.fields[attr])
+        for key in section.lists:
+            model = LIST_MODELS[key]
+            model.objects.filter(organization=org).delete()
+            model.objects.bulk_create(model(organization=org, position=i, **row) for i, row in enumerate(parsed.lists[key]))
+        if section.financials:
+            org.financials.all().delete()
+            Financials.objects.create(organization=org, **parsed.financials)
+        if section.needs:
+            FundingNeed.objects.filter(organization=org).delete()
+            FundingNeed.objects.bulk_create(FundingNeed(organization=org, position=i, **n) for i, n in enumerate(parsed.needs))
+
+
+def _save_990(org, file):
+    """A new 990 upload needs verifying again."""
+    Form990Upload.objects.update_or_create(
+        organization=org,
+        defaults={"file_name": file.name[:255], "data": file.read(), "verified_at": None},
+    )
+
+
 @transaction.atomic
 def _save_profile(org, parsed, status):
-    """Replaces the organization's profile with the submitted one. A new 990 upload needs verifying again."""
-    for attr, value in parsed.fields.items():
-        setattr(org, attr, value)
+    """Replaces the organization's whole profile with the submitted one."""
+    _write_sections(org, parsed, SECTIONS)
     org.profile_status = status
     org.submitted_at = timezone.now()
     org.save()
-
-    org.financials.all().delete()
-    Financials.objects.create(organization=org, **parsed.financials)
-    for key, model in SECTIONS.items():
-        model.objects.filter(organization=org).delete()
-        model.objects.bulk_create(model(organization=org, position=i, **row) for i, row in enumerate(parsed.lists[key]))
-    FundingNeed.objects.filter(organization=org).delete()
-    FundingNeed.objects.bulk_create(FundingNeed(organization=org, position=i, **n) for i, n in enumerate(parsed.needs))
-
     if parsed.file:
-        Form990Upload.objects.update_or_create(
-            organization=org,
-            defaults={"file_name": parsed.file.name[:255], "data": parsed.file.read(), "verified_at": None},
-        )
+        _save_990(org, parsed.file)

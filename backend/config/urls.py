@@ -14,6 +14,7 @@ api = [
     path("apply", directory.apply),
     path("me", accounts.me),
     path("me/organizations/<slug:slug>/profile", directory.managed_profile),
+    path("me/organizations/<slug:slug>/profile/<slug:section>", directory.save_profile_section),
     path("auth/link", accounts.request_link),
     path("auth/callback", accounts.callback),
     path("auth/signout", accounts.sign_out),

@@ -1,5 +1,6 @@
 import "server-only";
 import { cookies } from "next/headers";
+import { cache } from "react";
 import { inferApproaches } from "./approach";
 import { searchWords } from "./format";
 import { toEnglish } from "./imports";
@@ -43,7 +44,7 @@ export async function getMe(): Promise<Me> {
 }
 
 /** The profile form's values for an organization the signed-in person manages, or undefined if they don't. */
-export async function getProfileForm(slug: string): Promise<ProfileForm | undefined> {
+export const getProfileForm = cache(async (slug: string): Promise<ProfileForm | undefined> => {
   const headers = { Accept: "application/json", Cookie: (await cookies()).toString() };
   const res = await fetch(`${BACKEND_URL}/api/me/organizations/${encodeURIComponent(slug)}/profile`, {
     headers,
@@ -52,7 +53,7 @@ export async function getProfileForm(slug: string): Promise<ProfileForm | undefi
   if (res.status === 401 || res.status === 403 || res.status === 404) return undefined;
   if (!res.ok) throw new Error(`Backend ${res.status} for profile form`);
   return res.json();
-}
+});
 
 export async function addSubscription(email: string, query: string): Promise<void> {
   const res = await fetch(`${BACKEND_URL}/api/subscriptions`, {

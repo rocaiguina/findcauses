@@ -39,8 +39,9 @@ Modeled on "claim your business" review sites. Every organization confirmed agai
 - **Claim** (`/for-nonprofits` → `/listings/[slug]/claim`): sign in with an emailed link (no passwords). An
   email on the organization's website domain verifies the claim instantly; anything else (Gmail, a different
   domain) waits in **Admin → Claims** for approval. Rules: `backend/directory/verification.py`.
-- **Complete the profile** (`/dashboard/[slug]/profile`): the full form, prefilled from IRS data. Saving
-  publishes it, and the profile replaces the basic IRS page.
+- **Manage the profile** (`/dashboard/[slug]`): seven sections, each saved on its own and prefilled from IRS data.
+  Sections stay in a private draft while the IRS page stays up; saving the last one publishes the whole profile.
+  After that, each save goes live by itself.
 - **FindCauses Certified**: claimed + published profile + a Form 990 for one of the last 3 tax years (from IRS
   data, or uploaded and verified by an admin). Checked live in `Organization.certified_check`, so it lapses on
   its own when the 990 goes stale.
