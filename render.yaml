@@ -21,6 +21,5 @@ services:
         sync: false
       - key: RESEND_API_KEY
         sync: false
-      # Until a domain is verified in Resend, onboarding@resend.dev only delivers to the Resend account's own email.
       - key: EMAIL_FROM
-        value: FindCauses <onboarding@resend.dev>
+        value: FindCauses <hello@findcauses.org>

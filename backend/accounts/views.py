@@ -44,6 +44,7 @@ def request_link(request):
         send_sign_in_link(email, f"{settings.SITE_URL}/api/auth/callback?token={quote(token)}")
     except Exception:
         log.exception("Sign-in email failed")
+        SignInLink.revoke(token)
         return Response({"error": "We couldn't send the email. Please try again in a minute."}, status=502)
     return Response({"sentTo": email})
 

@@ -74,8 +74,8 @@ Email subscriptions are stored, but **sending the emails is not built yet**.
   `npx netlify-cli deploy --prod` (stop the dev server first: they share `.next`).
 - **Data:** `uv run python manage.py load_directory <file.json>` loads or refreshes organizations and IRS
   filings without touching profiles or claims. Neon's project is linked in `neon.ts`.
-- **Email:** until a domain is verified in Resend, `onboarding@resend.dev` only delivers to the Resend account's
-  own address. Verify a domain and set `EMAIL_FROM` on Render.
+- **Email:** sent through Resend from `hello@findcauses.org` (`EMAIL_FROM` on Render). `findcauses.org` is verified
+  in Resend; its DNS records live in Cloudflare. That address only sends: it has no inbox.
 
 Key settings: `src/lib/config.ts` (budget range), `src/lib/causes.ts` (causes and colors; keep in sync with
 `CAUSES` in `backend/directory/models.py`).

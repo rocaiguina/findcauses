@@ -1,6 +1,7 @@
 import io
 import json
 import re
+from unittest.mock import patch
 
 from django.test import TestCase, override_settings
 from django.utils import timezone
@@ -81,6 +82,14 @@ class NonprofitFlowTests(TestCase):
         self.client.logout()
         self.assertEqual(self.client.get(f"/api/auth/callback?token={token}")["Location"], "/signin?e=expired")
         self.assertEqual(SignInLink.objects.count(), 1)
+
+    def test_failed_email_can_be_retried_right_away(self):
+        with patch("accounts.views.send_sign_in_link", side_effect=OSError("rejected")) as send, self.assertLogs("accounts.views", "ERROR"):
+            for _ in range(2):
+                res = self.client.post("/api/auth/link", {"email": "ana@testorg.org"}, content_type="application/json")
+                self.assertEqual(res.status_code, 502)
+        self.assertEqual(send.call_count, 2)
+        self.assertEqual(SignInLink.objects.count(), 0)
 
     def test_domain_email_claims_instantly_and_certifies_after_profile(self):
         self.sign_in("ana@testorg.org")

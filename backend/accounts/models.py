@@ -64,6 +64,11 @@ class SignInLink(models.Model):
         return token
 
     @classmethod
+    def revoke(cls, token: str) -> None:
+        """Removes a link whose email never went out, so it doesn't count against the one-a-minute limit."""
+        cls.objects.filter(token_hash=_hash(token)).delete()
+
+    @classmethod
     def redeem(cls, token: str):
         """Uses up a valid link (once) and returns it, or None."""
         fresh = timezone.now() - cls.LIFETIME
