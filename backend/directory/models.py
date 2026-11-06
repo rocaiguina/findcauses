@@ -16,6 +16,7 @@ CAUSES = [
     ("education", "Education"),
     ("housing", "Housing"),
     ("disaster-relief", "Disaster Relief"),
+    ("social-services", "Social Services"),
     ("other", "Other"),
 ]
 

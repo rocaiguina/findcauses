@@ -66,6 +66,12 @@ export const CAUSES = [
     color: "#c0392b",
   },
   {
+    slug: "social-services",
+    label: "Social Services",
+    blurb: "Children and family services, elder care, community aid and support for people in need.",
+    color: "#b0517f",
+  },
+  {
     slug: "other",
     label: "Other",
     blurb: "Missions that cross or sit outside the categories above.",

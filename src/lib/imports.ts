@@ -229,6 +229,8 @@ export function causeFromNtee(code: string | null | undefined): CauseSlug | unde
       return /^I8/i.test(code) ? "civil-rights" : undefined;
     case "N":
       return "recreation-sports";
+    case "P": // human services
+      return "social-services";
     case "R":
       return "civil-rights";
     default:
