@@ -72,6 +72,12 @@ export const CAUSES = [
     color: "#b0517f",
   },
   {
+    slug: "animal-welfare",
+    label: "Animal Welfare",
+    blurb: "Animal protection, rescue, shelters and humane care.",
+    color: "#c2571a",
+  },
+  {
     slug: "other",
     label: "Other",
     blurb: "Missions that cross or sit outside the categories above.",

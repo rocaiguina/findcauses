@@ -4,9 +4,9 @@ A directory of mid-size U.S. nonprofits ($1M–$20M in annual expenses per Form 
 individual donors, foundations and corporate givers.
 
 Each profile covers mission and focus areas, impact metrics, track record, networks, roadmap, Form 990
-financials, board of directors and stewardship. Organizations are grouped into thirteen causes: Climate Change,
+financials, board of directors and stewardship. Organizations are grouped into fourteen causes: Climate Change,
 Economy, Fiscal Policy, Civil Rights, Energy & Infrastructure, Arts & Culture, Recreation & Sports, Public Health,
-Education, Housing, Disaster Relief, Social Services, and Other (see `src/lib/causes.ts`).
+Education, Housing, Disaster Relief, Social Services, Animal Welfare, and Other (see `src/lib/causes.ts`).
 
 ## How it's built
 

@@ -211,6 +211,8 @@ export function causeFromNtee(code: string | null | undefined): CauseSlug | unde
       return "education";
     case "C":
       return "climate-change";
+    case "D": // animal-related
+      return "animal-welfare";
     case "E": // health care
     case "F": // mental health and crisis intervention
     case "G": // diseases and disorders
