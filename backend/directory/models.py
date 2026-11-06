@@ -69,6 +69,7 @@ class Organization(models.Model):
 
     # The full profile, written by the organization.
     profile_status = models.CharField(max_length=10, choices=Profile.choices, default=Profile.NONE)
+    hidden = models.BooleanField(default=False, help_text="Off the public site and can't be claimed. Nothing is deleted.")
     tagline = models.CharField(max_length=160, blank=True)
     year_founded = models.PositiveSmallIntegerField(null=True, blank=True)
     geographic_scope = models.CharField(max_length=200, blank=True)

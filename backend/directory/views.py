@@ -31,7 +31,7 @@ SIGN_IN_REQUIRED = Response({"error": "Sign in first."}, status=401)
 @api_view(["GET"])
 def directory(request):
     """Every organization: published profiles, and pages built from IRS data for the rest."""
-    orgs = serializers.with_related(Organization.objects.exclude(profile_status=Organization.Profile.PENDING))
+    orgs = serializers.with_related(Organization.objects.filter(hidden=False).exclude(profile_status=Organization.Profile.PENDING))
     published = [o for o in orgs if o.has_profile]
     return Response(
         {
@@ -43,7 +43,7 @@ def directory(request):
 
 @api_view(["GET"])
 def organization_profile(request, slug):
-    org = get_object_or_404(serializers.with_related(Organization.objects), slug=slug)
+    org = get_object_or_404(serializers.with_related(Organization.objects), slug=slug, hidden=False)
     if not org.has_profile:
         raise Http404
     return Response(serializers.profile(org))
@@ -51,14 +51,14 @@ def organization_profile(request, slug):
 
 @api_view(["GET"])
 def organization_listing(request, slug):
-    org = get_object_or_404(serializers.with_related(Organization.objects), slug=slug)
+    org = get_object_or_404(serializers.with_related(Organization.objects), slug=slug, hidden=False)
     if org.profile_status == Organization.Profile.PENDING:
         raise Http404
     return Response(serializers.listing(org))
 
 
 def form990_pdf(request, slug):
-    org = get_object_or_404(Organization, slug=slug, profile_status=Organization.Profile.PUBLISHED)
+    org = get_object_or_404(Organization, slug=slug, hidden=False, profile_status=Organization.Profile.PUBLISHED)
     upload = get_object_or_404(Form990Upload, organization=org)
     return _pdf(upload)
 
@@ -92,7 +92,7 @@ def subscribe(request):
 def claim(request, slug):
     if not request.user:
         return SIGN_IN_REQUIRED
-    org = get_object_or_404(Organization, slug=slug)
+    org = get_object_or_404(Organization, slug=slug, hidden=False)
     name = str(request.data.get("name", "")).strip()[:200]
     role = str(request.data.get("role", "")).strip()[:200]
     if not name or not role:
@@ -195,7 +195,7 @@ def apply(request):
         return SIGN_IN_REQUIRED
     parsed = parse_profile(request.data, request.FILES, new_organization=True, file_required=True)
     if not parsed.errors and Organization.objects.filter(ein=parsed.ein).exists():
-        parsed.errors["ein"] = "This organization is already listed. Find it in the directory and claim it instead."
+        parsed.errors["ein"] = "We already have this organization on file. If it's in the directory, claim it there instead."
     if parsed.errors:
         return Response({"errors": parsed.errors}, status=422)
 

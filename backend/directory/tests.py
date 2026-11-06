@@ -1,8 +1,10 @@
 import io
 import json
 import re
+from datetime import date
 from unittest.mock import patch
 
+from django.core.management import call_command
 from django.test import TestCase, override_settings
 from django.utils import timezone
 
@@ -443,6 +445,58 @@ class ApplicationThresholdTests(TestCase):
         over = {"totalRevenue": "90000000", "programExpenses": "90000000", "managementExpenses": "0", "fundraisingExpenses": "0", "totalExpenses": "90000000"}
         errors = parse_profile({**profile_form(), **over}, {}, new_organization=False, file_required=False).errors
         self.assertEqual(errors, {})
+
+
+class HiddenOrganizationTests(TestCase):
+    def setUp(self):
+        self.user = User.objects.create(email="ana@testorg.org")
+        self.shown = Organization.objects.create(slug="shown", name="Shown", website="https://shown.org")
+        self.hidden = Organization.objects.create(
+            slug="hidden", name="Hidden", hidden=True, website="https://testorg.org", profile_status=Organization.Profile.PUBLISHED
+        )
+
+    def test_hidden_organizations_are_off_the_public_api(self):
+        api = self.client.get("/api/directory").json()
+        self.assertEqual([o["slug"] for o in api["listings"] + api["organizations"]], ["shown"])
+        self.assertEqual(self.client.get("/api/listings/hidden").status_code, 404)
+        self.assertEqual(self.client.get("/api/organizations/hidden").status_code, 404)
+        Form990Upload.objects.create(organization=self.hidden, file_name="990.pdf", data=b"%PDF-1.4")
+        self.assertEqual(self.client.get("/api/organizations/hidden/990").status_code, 404)
+
+    def test_a_hidden_organization_cant_be_claimed(self):
+        self.client.force_login(self.user)
+        res = self.client.post("/api/listings/hidden/claim", {"name": "Ana", "role": "ED"}, content_type="application/json")
+        self.assertEqual(res.status_code, 404)
+        self.assertEqual(Claim.objects.count(), 0)
+
+    @override_settings(STORAGES={"staticfiles": {"BACKEND": "django.contrib.staticfiles.storage.StaticFilesStorage"}})
+    def test_admin_can_show_and_hide(self):
+        self.client.force_login(User.objects.create_superuser("admin@findcauses.test", "a-long-test-password"))
+        self.assertEqual(self.client.get(f"/admin/directory/organization/{self.hidden.pk}/change/").status_code, 200)
+        self.client.post("/admin/directory/organization/", {"action": "show", "_selected_action": [str(self.hidden.pk)]})
+        self.assertEqual(self.client.get("/api/organizations/hidden").status_code, 200)
+        self.client.post("/admin/directory/organization/", {"action": "hide", "_selected_action": [str(self.hidden.pk)]})
+        self.assertEqual(self.client.get("/api/organizations/hidden").status_code, 404)
+
+    def test_the_command_hides_only_what_misses_a_limit_and_needs_apply(self):
+        year = timezone.now().year
+        def org(slug, expenses, ruling_year):
+            o = Organization.objects.create(slug=slug, name=slug, irs_ruling_date=date(ruling_year, 1, 1))
+            IrsFiling.objects.create(organization=o, tax_year=2023, form_type="990", total_expenses=expenses)
+            return o
+        org("big", 20_000_001, 1990)
+        org("young", 5_000_000, year - 5)
+        org("young-no-figures", None, year - 5)
+        org("exactly-20m", 20_000_000, 1990)
+        org("no-figures", None, 1990)
+        org("small", 100_000, 1990)
+        names = lambda: set(Organization.objects.filter(hidden=True).values_list("slug", flat=True))  # noqa: E731
+        out = io.StringIO()
+        call_command("hide_outside_limits", stdout=out)
+        self.assertIn("3 organizations would be hidden", out.getvalue())
+        self.assertEqual(names(), {"hidden"})
+        call_command("hide_outside_limits", "--apply", stdout=io.StringIO())
+        self.assertEqual(names(), {"hidden", "big", "young", "young-no-figures"})
 
 
 class DomainMatchTests(TestCase):

@@ -130,11 +130,11 @@ class CauseFilter(admin.SimpleListFilter):
 @admin.register(Organization)
 class OrganizationAdmin(admin.ModelAdmin):
     form = OrganizationForm
-    list_display = ["name", "cause_list", "city", "profile_status", "claimed", "certified", "latest_990"]
-    list_filter = ["profile_status", CauseFilter]
+    list_display = ["name", "cause_list", "city", "hidden", "profile_status", "claimed", "certified", "latest_990"]
+    list_filter = ["hidden", "profile_status", CauseFilter]
     search_fields = ["name", "irs_name", "ein", "city"]
     prepopulated_fields = {"slug": ["name"]}
-    actions = ["publish", "reject"]
+    actions = ["publish", "reject", "hide", "show"]
     inlines = [
         ClaimInline,
         Form990Inline,
@@ -148,7 +148,7 @@ class OrganizationAdmin(admin.ModelAdmin):
         BoardInline,
     ]
     fieldsets = [
-        (None, {"fields": ["name", "slug", "cause", "other_causes", "mission", "tags", "city", "state", "website", "email", "phone"]}),
+        (None, {"fields": ["name", "slug", "hidden", "cause", "other_causes", "mission", "tags", "city", "state", "website", "email", "phone"]}),
         ("IRS record", {"fields": ["ein", "irs_name", "irs_match_score", "ntee_code", "irs_ruling_date"]}),
         (
             "Profile",
@@ -215,6 +215,14 @@ class OrganizationAdmin(admin.ModelAdmin):
             # The person who applied for a new organization now manages it.
             _decide(org.claims.filter(status=Claim.Status.PENDING), Claim.Status.ACTIVE)
         messages.success(request, f"Published {queryset.count()} profile(s).")
+
+    @admin.action(description="Hide from the public site")
+    def hide(self, request, queryset):
+        queryset.update(hidden=True)
+
+    @admin.action(description="Show on the public site")
+    def show(self, request, queryset):
+        queryset.update(hidden=False)
 
     @admin.action(description="Reject submitted profile")
     def reject(self, request, queryset):
