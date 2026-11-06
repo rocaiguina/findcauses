@@ -8,7 +8,7 @@ from django.utils import timezone
 
 from accounts.models import SignInLink, User
 
-from .models import Claim, IrsFiling, Organization
+from .models import Claim, Form990Upload, IrsFiling, Organization
 from .verification import email_matches_website
 
 
@@ -221,6 +221,33 @@ class ClaimEmailTests(TestCase):
         self.assertEqual(send.call_args.args[0], "director@neworg.org")
         claim.refresh_from_db()
         self.assertEqual(claim.status, Claim.Status.REJECTED)
+
+
+@override_settings(STORAGES={"staticfiles": {"BACKEND": "django.contrib.staticfiles.storage.StaticFilesStorage"}})
+class AdminPagesTests(TestCase):
+    def setUp(self):
+        self.client.force_login(User.objects.create_superuser("admin@findcauses.test", "a-long-test-password"))
+        self.org = Organization.objects.create(slug="test-org", name="Test Org")
+        IrsFiling.objects.create(organization=self.org, tax_year=2023, form_type="990")
+
+    def test_organization_page_without_an_uploaded_990(self):
+        res = self.client.get(f"/admin/directory/organization/{self.org.pk}/change/")
+        self.assertEqual(res.status_code, 200)
+
+    def test_organization_page_with_an_uploaded_990(self):
+        Form990Upload.objects.create(organization=self.org, file_name="990.pdf", data=b"%PDF-1.4 test")
+        res = self.client.get(f"/admin/directory/organization/{self.org.pk}/change/")
+        self.assertContains(res, f"/admin/990/{self.org.pk}")
+
+    def test_every_list_and_add_page_loads(self):
+        for model in ["organization", "claim", "subscription"]:
+            for page in ["", "add/"]:
+                self.assertEqual(self.client.get(f"/admin/directory/{model}/{page}").status_code, 200, f"{model} {page}")
+        self.assertEqual(self.client.get("/admin/accounts/user/").status_code, 200)
+        user = User.objects.create(email="ana@gmail.com")
+        claim = Claim.objects.create(user=user, organization=self.org, claimant_name="Ana", claimant_role="ED")
+        self.assertEqual(self.client.get(f"/admin/directory/claim/{claim.pk}/change/").status_code, 200)
+        self.assertEqual(self.client.get(f"/admin/accounts/user/{user.pk}/change/").status_code, 200)
 
 
 class DomainMatchTests(TestCase):

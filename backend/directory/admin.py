@@ -75,6 +75,10 @@ class Form990Inline(admin.StackedInline):
     fields = ["download", "uploaded_at", "verified_at"]
     readonly_fields = ["download", "uploaded_at"]
 
+    def has_add_permission(self, request, obj=None):
+        # Files come from the nonprofit's profile form; there's nothing to fill in here.
+        return False
+
     @admin.display(description="File")
     def download(self, obj):
         url = reverse("admin-990", args=[obj.organization_id])
