@@ -1,6 +1,7 @@
 import io
 import json
 import re
+import tempfile
 from datetime import date
 from unittest.mock import patch
 
@@ -497,6 +498,23 @@ class HiddenOrganizationTests(TestCase):
         self.assertEqual(names(), {"hidden"})
         call_command("hide_outside_limits", "--apply", stdout=io.StringIO())
         self.assertEqual(names(), {"hidden", "big", "young", "young-no-figures"})
+
+
+class LoadDirectoryTests(TestCase):
+    def test_a_refresh_keeps_causes_and_websites_edited_by_hand(self):
+        row = {
+            "ein": "660000009", "slug": "org", "name": "New Name", "cause": "other", "city": "", "state": "PR", "mission": "",
+            "tags": [], "website": "", "email": "", "phone": "", "irs_name": "", "irs_match_score": 95, "ntee_code": "",
+            "irs_ruling_date": None, "filings": [],
+        }  # fmt: skip
+        Organization.objects.create(slug="org", name="Old Name", ein="660000009", cause="housing", other_causes=["education"], website="https://org.org")
+        with tempfile.NamedTemporaryFile("w", suffix=".json") as f:
+            json.dump({"organizations": [row, {**row, "ein": "660000010", "slug": "fresh", "cause": "economy"}]}, f)
+            f.flush()
+            call_command("load_directory", f.name, stdout=io.StringIO())
+        org = Organization.objects.get(slug="org")
+        self.assertEqual((org.name, org.cause, org.other_causes, org.website), ("New Name", "housing", ["education"], "https://org.org"))
+        self.assertEqual(Organization.objects.get(slug="fresh").cause, "economy")
 
 
 class DomainMatchTests(TestCase):

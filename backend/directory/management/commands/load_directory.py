@@ -18,8 +18,12 @@ FILING_FIELDS = [
 ]
 
 
+# Set when an organization is created, then kept: we correct these by hand, and a refresh mustn't undo that.
+EDITED_HERE = {"cause", "website"}
+
+
 class Command(BaseCommand):
-    help = "Loads (or refreshes) organizations and their IRS filings from a JSON file. Profiles and claims are untouched."
+    help = "Loads (or refreshes) organizations and their IRS filings from a JSON file. Profiles, claims, causes and websites are untouched."
 
     def add_arguments(self, parser):
         parser.add_argument("path", type=Path, help="JSON file: {organizations: [{..., filings: [...]}]}")
@@ -57,12 +61,13 @@ class Command(BaseCommand):
             if row["ein"] in existing:
                 org = existing[row["ein"]]
                 for k, v in values.items():
-                    setattr(org, k, v)
+                    if k not in EDITED_HERE:
+                        setattr(org, k, v)
                 changed.append(org)
             else:
                 new.append(Organization(ein=row["ein"], **values))
         Organization.objects.bulk_create(new, batch_size=200)
-        Organization.objects.bulk_update(changed, list(values), batch_size=200)
+        Organization.objects.bulk_update(changed, [k for k in values if k not in EDITED_HERE], batch_size=200)
         created, updated = len(new), len(changed)
 
         by_ein = {o.ein: o for o in [*new, *changed]}
