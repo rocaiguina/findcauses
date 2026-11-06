@@ -6,7 +6,7 @@ from django.utils.text import slugify
 from rest_framework.decorators import api_view
 from rest_framework.response import Response
 
-from . import serializers
+from . import notifications, serializers
 from .models import (
     BoardMember,
     Claim,
@@ -109,6 +109,8 @@ def claim(request, slug):
             "decided_at": timezone.now() if verified else None,
         },
     )
+    if created:
+        notifications.new_claim(c)
     return Response({"id": str(c.id), "status": c.status, "method": c.method}, status=201 if created else 200)
 
 
@@ -160,7 +162,7 @@ def apply(request):
         with transaction.atomic():
             org = Organization.objects.create(slug=slug, ein=parsed.ein, name=parsed.fields["name"])
             _save_profile(org, parsed, status=Organization.Profile.PENDING)
-            Claim.objects.create(
+            c = Claim.objects.create(
                 user=request.user,
                 organization=org,
                 method=Claim.Method.REVIEW,
@@ -169,6 +171,7 @@ def apply(request):
             )
     except IntegrityError:
         return Response({"errors": {"ein": "This organization is already listed."}}, status=409)
+    notifications.new_claim(c)
     return Response({"slug": org.slug}, status=201)
 
 

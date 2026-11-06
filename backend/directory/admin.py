@@ -3,6 +3,7 @@ from django.urls import reverse
 from django.utils import timezone
 from django.utils.html import format_html
 
+from . import notifications
 from .models import (
     BoardMember,
     Claim,
@@ -21,6 +22,18 @@ from .models import (
 admin.site.site_header = "FindCauses admin"
 admin.site.site_title = "FindCauses admin"
 admin.site.index_title = "Directory, claims and profiles"
+
+
+def _decide(claims, status):
+    """Sets the claims' status and emails each person whose claim actually changed."""
+    changed = list(claims.exclude(status=status).select_related("user", "organization"))
+    now = timezone.now()
+    for claim in changed:
+        claim.status = status
+        claim.decided_at = now
+    Claim.objects.bulk_update(changed, ["status", "decided_at"])
+    for claim in changed:
+        notifications.claim_decided(claim)
 
 
 class SectionInline(admin.TabularInline):
@@ -78,7 +91,8 @@ class ClaimInline(admin.TabularInline):
     model = Claim
     extra = 0
     fields = ["user", "claimant_name", "claimant_role", "status", "method", "created_at"]
-    readonly_fields = ["created_at"]
+    # Status is decided on the claim itself, which emails the claimant.
+    readonly_fields = ["status", "created_at"]
     autocomplete_fields = ["user"]
 
 
@@ -163,11 +177,17 @@ class OrganizationAdmin(admin.ModelAdmin):
             org.save(update_fields=["profile_status", "reviewed_at"])
             Form990Upload.objects.filter(organization=org).update(verified_at=now)
             # The person who applied for a new organization now manages it.
-            org.claims.filter(status=Claim.Status.PENDING).update(status=Claim.Status.ACTIVE, decided_at=now)
+            _decide(org.claims.filter(status=Claim.Status.PENDING), Claim.Status.ACTIVE)
         messages.success(request, f"Published {queryset.count()} profile(s).")
 
     @admin.action(description="Reject submitted profile")
     def reject(self, request, queryset):
+        # Rejecting a submitted profile also answers the application that came with it.
+        applications = Claim.objects.filter(
+            organization__in=queryset.filter(profile_status=Organization.Profile.PENDING),
+            status=Claim.Status.PENDING,
+        )
+        _decide(applications, Claim.Status.REJECTED)
         queryset.update(profile_status=Organization.Profile.REJECTED, reviewed_at=timezone.now())
 
 
@@ -187,11 +207,18 @@ class ClaimAdmin(admin.ModelAdmin):
 
     @admin.action(description="Approve selected claims")
     def approve(self, request, queryset):
-        queryset.update(status=Claim.Status.ACTIVE, decided_at=timezone.now())
+        _decide(queryset, Claim.Status.ACTIVE)
 
     @admin.action(description="Reject selected claims")
     def reject(self, request, queryset):
-        queryset.update(status=Claim.Status.REJECTED, decided_at=timezone.now())
+        _decide(queryset, Claim.Status.REJECTED)
+
+    def save_model(self, request, obj, form, change):
+        if change and "status" in form.changed_data:
+            obj.decided_at = timezone.now()
+        super().save_model(request, obj, form, change)
+        if change and "status" in form.changed_data:
+            notifications.claim_decided(obj)
 
 
 @admin.register(Subscription)

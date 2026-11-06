@@ -152,6 +152,77 @@ class NonprofitFlowTests(TestCase):
         self.assertTrue(Organization.objects.get(pk=org.pk).is_certified)
 
 
+@override_settings(EMAIL_DELIVERY="log", SITE_URL="http://testserver")
+class ClaimEmailTests(TestCase):
+    def setUp(self):
+        self.org = Organization.objects.create(slug="test-org", name="Test & Org", website="https://testorg.org")
+        self.admin = User.objects.create_superuser("admin@findcauses.test", "a-long-test-password")
+
+    def claim(self, email):
+        self.client.force_login(User.objects.get_or_create(email=email)[0])
+        with patch("directory.notifications.send") as send:
+            res = self.client.post("/api/listings/test-org/claim", {"name": "Ana", "role": "ED"}, content_type="application/json")
+        self.client.logout()
+        return Claim.objects.get(pk=res.json()["id"]), send
+
+    def decide(self, action, claim):
+        self.client.force_login(self.admin)
+        with patch("directory.notifications.send") as send:
+            res = self.client.post("/admin/directory/claim/", {"action": action, "_selected_action": [str(claim.pk)]})
+        self.assertEqual(res.status_code, 302)
+        return send
+
+    def test_staff_hear_about_a_claim_to_review(self):
+        claim, send = self.claim("ana@gmail.com")
+        send.assert_called_once()
+        to, subject, text, html = send.call_args.args
+        self.assertEqual(to, "admin@findcauses.test")
+        self.assertEqual(subject, "Claim to review: Test & Org")
+        self.assertIn("ana@gmail.com", text)
+        self.assertIn(f"/admin/directory/claim/{claim.pk}/change/", text)
+        self.assertIn("Test &amp; Org", html)
+
+    def test_staff_hear_about_a_verified_claim(self):
+        _, send = self.claim("ana@testorg.org")
+        self.assertEqual(send.call_args.args[1], "New claim verified: Test & Org")
+
+    def test_repeating_a_claim_doesnt_email_again(self):
+        self.claim("ana@gmail.com")
+        _, send = self.claim("ana@gmail.com")
+        send.assert_not_called()
+
+    def test_claimant_hears_the_decision_once(self):
+        claim, _ = self.claim("ana@gmail.com")
+        send = self.decide("approve", claim)
+        send.assert_called_once()
+        self.assertEqual(send.call_args.args[0], "ana@gmail.com")
+        self.assertEqual(send.call_args.args[1], "You now manage Test & Org on FindCauses")
+        claim.refresh_from_db()
+        self.assertEqual(claim.status, Claim.Status.ACTIVE)
+        self.assertIsNotNone(claim.decided_at)
+        self.decide("approve", claim).assert_not_called()
+
+        send = self.decide("reject", claim)
+        self.assertEqual(send.call_args.args[1], "Your claim for Test & Org wasn't approved")
+
+    def test_a_failed_email_doesnt_block_the_claim(self):
+        self.client.force_login(User.objects.create(email="ana@gmail.com"))
+        with patch("directory.notifications.send", side_effect=OSError("rejected")), self.assertLogs("directory.notifications", "ERROR"):
+            res = self.client.post("/api/listings/test-org/claim", {"name": "Ana", "role": "ED"}, content_type="application/json")
+        self.assertEqual(res.status_code, 201)
+
+    def test_rejecting_an_application_answers_the_applicant(self):
+        pending = Organization.objects.create(slug="new-org", name="New Org", profile_status=Organization.Profile.PENDING)
+        user = User.objects.create(email="director@neworg.org")
+        claim = Claim.objects.create(user=user, organization=pending, method=Claim.Method.REVIEW, claimant_name="D", claimant_role="ED")
+        self.client.force_login(self.admin)
+        with patch("directory.notifications.send") as send:
+            self.client.post("/admin/directory/organization/", {"action": "reject", "_selected_action": [str(pending.pk)]})
+        self.assertEqual(send.call_args.args[0], "director@neworg.org")
+        claim.refresh_from_db()
+        self.assertEqual(claim.status, Claim.Status.REJECTED)
+
+
 class DomainMatchTests(TestCase):
     def test_matches(self):
         self.assertTrue(email_matches_website("a@cne.org", "https://www.cne.org/about"))
