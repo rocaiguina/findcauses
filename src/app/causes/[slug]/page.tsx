@@ -18,7 +18,7 @@ export default async function CausePage({ params }: Props) {
   const cause = getCause((await params).slug);
   if (!cause) notFound();
   const entries = await listDirectory();
-  const count = entries.filter((o) => o.cause === cause.slug).length;
+  const count = entries.filter((o) => o.causes.includes(cause.slug)).length;
 
   return (
     <div className="container-page max-w-4xl py-10 sm:py-14">

@@ -15,7 +15,7 @@ export default async function CausesPage() {
       <h1 className="mt-2 text-4xl font-semibold">{CAUSES.length} areas of work</h1>
       <div className="mt-10 grid gap-4 sm:grid-cols-2">
         {CAUSES.map((c) => {
-          const inCause = entries.filter((o) => o.cause === c.slug);
+          const inCause = entries.filter((o) => o.causes.includes(c.slug));
           const budget = inCause.reduce((s, o) => s + (o.budget ?? 0), 0);
           return (
             <Link key={c.slug} href={`/causes/${c.slug}`} className="card group flex gap-5 p-6">

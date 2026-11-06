@@ -2,7 +2,7 @@
 
 import { useMemo, useState } from "react";
 import { OrgRow } from "./OrgCard";
-import { CAUSES } from "@/lib/causes";
+import { CAUSES, type CauseSlug } from "@/lib/causes";
 import { BUDGET_BANDS } from "@/lib/config";
 import { searchWords } from "@/lib/format";
 import type { DirectoryEntry } from "@/lib/types";
@@ -35,7 +35,7 @@ export function DirectoryBrowser({
   const states = useMemo(() => [...new Set(entries.map((o) => o.state))].sort(), [entries]);
   const causeCounts = useMemo(() => {
     const counts: Record<string, number> = { "": entries.length };
-    for (const e of entries) counts[e.cause] = (counts[e.cause] ?? 0) + 1;
+    for (const e of entries) for (const c of e.causes) counts[c] = (counts[c] ?? 0) + 1;
     return counts;
   }, [entries]);
 
@@ -44,7 +44,7 @@ export function DirectoryBrowser({
     const words = searchWords(query);
     const b = BUDGET_BANDS.find((x) => x.id === band);
     const filtered = entries.filter((o) => {
-      if (cause && o.cause !== cause) return false;
+      if (cause && !o.causes.includes(cause as CauseSlug)) return false;
       if (state && o.state !== state) return false;
       if (kind === "certified" ? !o.certified : kind && o.kind !== kind) return false;
       if (withFinancials && o.budget == null) return false;

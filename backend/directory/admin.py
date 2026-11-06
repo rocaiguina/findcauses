@@ -1,10 +1,13 @@
+from django import forms
 from django.contrib import admin, messages
+from django.db.models import Q
 from django.urls import reverse
 from django.utils import timezone
 from django.utils.html import format_html
 
 from . import notifications
 from .models import (
+    CAUSES,
     BoardMember,
     Claim,
     Financials,
@@ -100,10 +103,35 @@ class ClaimInline(admin.TabularInline):
     autocomplete_fields = ["user"]
 
 
+class OrganizationForm(forms.ModelForm):
+    other_causes = forms.MultipleChoiceField(
+        choices=CAUSES,
+        required=False,
+        widget=forms.CheckboxSelectMultiple,
+        help_text="Causes besides the primary one.",
+    )
+
+
+class CauseFilter(admin.SimpleListFilter):
+    """Organizations working on a cause, whether it's their primary one or not."""
+
+    title = "cause"
+    parameter_name = "any_cause"
+
+    def lookups(self, request, model_admin):
+        return CAUSES
+
+    def queryset(self, request, queryset):
+        if self.value():
+            return queryset.filter(Q(cause=self.value()) | Q(other_causes__contains=[self.value()]))
+        return queryset
+
+
 @admin.register(Organization)
 class OrganizationAdmin(admin.ModelAdmin):
-    list_display = ["name", "cause", "city", "profile_status", "claimed", "certified", "latest_990"]
-    list_filter = ["profile_status", "cause"]
+    form = OrganizationForm
+    list_display = ["name", "cause_list", "city", "profile_status", "claimed", "certified", "latest_990"]
+    list_filter = ["profile_status", CauseFilter]
     search_fields = ["name", "irs_name", "ein", "city"]
     prepopulated_fields = {"slug": ["name"]}
     actions = ["publish", "reject"]
@@ -120,7 +148,7 @@ class OrganizationAdmin(admin.ModelAdmin):
         BoardInline,
     ]
     fieldsets = [
-        (None, {"fields": ["name", "slug", "cause", "mission", "tags", "city", "state", "website", "email", "phone"]}),
+        (None, {"fields": ["name", "slug", "cause", "other_causes", "mission", "tags", "city", "state", "website", "email", "phone"]}),
         ("IRS record", {"fields": ["ein", "irs_name", "irs_match_score", "ntee_code", "irs_ruling_date"]}),
         (
             "Profile",
@@ -155,6 +183,10 @@ class OrganizationAdmin(admin.ModelAdmin):
             },
         ),
     ]
+
+    @admin.display(description="Causes")
+    def cause_list(self, obj):
+        return ", ".join(dict(CAUSES).get(c, c) for c in obj.causes)
 
     def get_queryset(self, request):
         return super().get_queryset(request).prefetch_related("claims", "filings", "financials").select_related("form990")

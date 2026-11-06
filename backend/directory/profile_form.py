@@ -102,6 +102,10 @@ def parse_profile(data, files, *, new_organization: bool, file_required: bool) -
     f["cause"] = text("cause", "Primary cause", 40)
     if f["cause"] and f["cause"] not in dict(CAUSES):
         e["cause"] = "Choose one of the listed causes."
+    others = data.getlist("otherCauses") if hasattr(data, "getlist") else data.get("otherCauses", [])
+    if any(c not in dict(CAUSES) for c in others):
+        e["otherCauses"] = "Choose from the listed causes."
+    f["other_causes"] = [c for c in dict.fromkeys(others) if c != f["cause"]]
     f["focus_areas"] = [s.strip() for s in text("focusAreas", "Focus areas", 300).split(",") if s.strip()][:6]
     f["mission"] = text("mission", "Mission statement", 1200)
 

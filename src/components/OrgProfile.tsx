@@ -102,7 +102,9 @@ export function OrgProfile({
         }
         badges={
           <>
-            <CauseBadge slug={org.cause} />
+            {org.causes.map((c) => (
+              <CauseBadge key={c} slug={c} />
+            ))}
             {org.certified && <CertifiedPill />}
             {org.focusAreas.map((a) => (
               <span key={a} className="chip">

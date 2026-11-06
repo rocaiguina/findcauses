@@ -368,6 +368,24 @@ export function ApplicationForm({ profile }: { profile?: ProfileForm }) {
             </select>
             <Err msg={errors.cause} />
           </div>
+          <fieldset>
+            <legend className="field-label">Other causes (optional)</legend>
+            <p className="mt-1 text-xs text-muted">Any other areas you work on. Funders will also find you under these.</p>
+            <div className="mt-2 flex flex-wrap gap-x-5 gap-y-2">
+              {CAUSES.map((c) => (
+                <label key={c.slug} className="inline-flex items-center gap-2 text-sm">
+                  <input
+                    type="checkbox"
+                    name="otherCauses"
+                    value={c.slug}
+                    defaultChecked={(initial.otherCauses ?? "").split(",").includes(c.slug)}
+                  />
+                  {c.label}
+                </label>
+              ))}
+            </div>
+            <Err msg={errors.otherCauses} />
+          </fieldset>
           <Field
             name="focusAreas"
             label="Focus areas / topics"

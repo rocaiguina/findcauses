@@ -66,7 +66,9 @@ export function ProjectDetail({
         <h2 className="mt-4 text-2xl font-semibold leading-tight">{opp.title}</h2>
         <div className="mt-2 flex flex-wrap items-center gap-2">
           <MatchBadge result={result} />
-          <CauseBadge slug={e.cause} />
+          {e.causes.map((c) => (
+            <CauseBadge key={c} slug={c} />
+          ))}
           {opp.implied ? (
             <StatusPill>No opportunity posted yet</StatusPill>
           ) : (

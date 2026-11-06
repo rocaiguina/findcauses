@@ -81,14 +81,16 @@ const CREDIT: Record<ReasonStatus, number> = { match: 1, partial: 0.5, unknown: 
 export function matchOpportunity(prefs: FunderPrefs, opp: Opportunity): MatchResult {
   const e = opp.entry;
   const reasons: Reason[] = [];
-  const causeLabel = getCause(e.cause)?.label ?? e.cause;
+  const causeLabel = (slug: string) => getCause(slug)?.label ?? slug;
 
-  if (prefs.causes.length)
+  if (prefs.causes.length) {
+    const shared = e.causes.find((c) => prefs.causes.includes(c));
     reasons.push(
-      prefs.causes.includes(e.cause)
-        ? { key: "cause", status: "match", text: `Works on ${causeLabel}, one of your causes` }
-        : { key: "cause", status: "miss", text: `Works on ${causeLabel}, which isn't one of your causes` },
+      shared
+        ? { key: "cause", status: "match", text: `Works on ${causeLabel(shared)}, one of your causes` }
+        : { key: "cause", status: "miss", text: `Works on ${causeLabel(e.cause)}, which isn't one of your causes` },
     );
+  }
 
   if (prefs.approaches?.length) {
     const shared = e.approaches.filter((a) => prefs.approaches!.includes(a));

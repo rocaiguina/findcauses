@@ -55,7 +55,10 @@ export type DirectoryEntry = {
   summary: string;
   city?: string;
   state: string;
+  /** The primary cause, which sets the organization's color. */
   cause: CauseSlug;
+  /** Every cause, primary first. */
+  causes: CauseSlug[];
   tags: string[];
   yearFounded?: number;
   /** Total annual expenses from the latest 990, when known. */
@@ -102,7 +105,10 @@ export type ImportedListing = {
   name: string;
   city: string | null;
   state: string;
+  /** The primary cause, which sets the organization's color. */
   cause: CauseSlug;
+  /** Every cause, primary first. */
+  causes: CauseSlug[];
   tags: string[];
   mission: string | null;
   website: string | null;
@@ -138,7 +144,10 @@ export type Organization = {
   geographicScope: string;
   contact: { name: string; title: string; email: string; phone: string };
 
+  /** The primary cause, which sets the organization's color. */
   cause: CauseSlug;
+  /** Every cause, primary first. */
+  causes: CauseSlug[];
   focusAreas: string[];
   mission: string;
 

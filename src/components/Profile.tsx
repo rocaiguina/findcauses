@@ -181,10 +181,10 @@ export function SimilarOrgs({ entries }: { entries: DirectoryEntry[] }) {
   );
 }
 
-/** Picks organizations in the same cause, preferring those with 990 figures closest in budget. */
-export function pickSimilar(all: DirectoryEntry[], self: { id: string; cause: string; budget?: number }, n = 5) {
+/** Picks organizations sharing a cause, preferring those with 990 figures closest in budget. */
+export function pickSimilar(all: DirectoryEntry[], self: { id: string; causes: string[]; budget?: number }, n = 5) {
   return all
-    .filter((e) => e.id !== self.id && e.cause === self.cause)
+    .filter((e) => e.id !== self.id && e.causes.some((c) => self.causes.includes(c)))
     .sort((a, b) => {
       const da = a.budget == null ? Infinity : Math.abs(Math.log((a.budget || 1) / (self.budget || 1_000_000)));
       const db = b.budget == null ? Infinity : Math.abs(Math.log((b.budget || 1) / (self.budget || 1_000_000)));

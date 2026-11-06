@@ -50,7 +50,8 @@ class Organization(models.Model):
     id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
     slug = models.SlugField(max_length=120, unique=True)
     name = models.CharField(max_length=200)
-    cause = models.CharField(max_length=40, choices=CAUSES, default="other")
+    cause = models.CharField("primary cause", max_length=40, choices=CAUSES, default="other")
+    other_causes = models.JSONField(default=list, blank=True, help_text="Causes besides the primary one.")
     city = models.CharField(max_length=100, blank=True)
     state = models.CharField(max_length=2, default="PR")
     mission = models.TextField(blank=True)
@@ -96,6 +97,11 @@ class Organization(models.Model):
 
     def __str__(self):
         return self.name
+
+    @property
+    def causes(self) -> list[str]:
+        """Every cause, primary first."""
+        return [self.cause, *(c for c in self.other_causes if c != self.cause)]
 
     @property
     def has_profile(self) -> bool:

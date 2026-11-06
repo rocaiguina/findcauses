@@ -164,6 +164,7 @@ async function listAllOpportunities(): Promise<ListedOpportunity[]> {
       orgName: o.entry.name,
       place: [o.entry.city, placeName(o.entry.state)].filter(Boolean).join(", "),
       cause: o.entry.cause,
+      causes: o.entry.causes,
       approaches: o.entry.approaches,
       type: o.type,
       amount: o.amount,

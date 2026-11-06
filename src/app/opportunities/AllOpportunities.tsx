@@ -19,6 +19,7 @@ export type ListedOpportunity = {
   orgName: string;
   place: string;
   cause: string;
+  causes: string[];
   approaches: Approach[];
   type: FundingType;
   amount: number | null;
@@ -35,7 +36,7 @@ export function AllOpportunities({ items }: { items: ListedOpportunity[] }) {
 
   const counts = useMemo(() => {
     const c: Record<string, number> = {};
-    for (const i of items) c[i.cause] = (c[i.cause] ?? 0) + 1;
+    for (const i of items) for (const slug of i.causes) c[slug] = (c[slug] ?? 0) + 1;
     return c;
   }, [items]);
 
@@ -43,7 +44,7 @@ export function AllOpportunities({ items }: { items: ListedOpportunity[] }) {
     const words = searchWords(query);
     const text = (i: ListedOpportunity) => searchWords(`${i.title} ${i.description} ${i.orgName} ${i.place}`).join(" ");
     return items
-      .filter((i) => (!cause || i.cause === cause) && words.every((w) => text(i).includes(w)))
+      .filter((i) => (!cause || i.causes.includes(cause)) && words.every((w) => text(i).includes(w)))
       .sort((a, b) =>
         sort === "org"
           ? a.orgName.localeCompare(b.orgName)

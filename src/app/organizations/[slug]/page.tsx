@@ -21,7 +21,7 @@ export default async function OrganizationPage({ params, searchParams }: Props) 
   const entry = profileEntry(org);
   const similar = pickSimilar(await listDirectory(), {
     id: org.id,
-    cause: org.cause,
+    causes: org.causes,
     budget: org.financials.totalExpenses,
   });
   return (

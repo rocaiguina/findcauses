@@ -34,7 +34,7 @@ export default async function ListingPage({ params, searchParams }: Props) {
   if (!l) notFound();
   if (l.profileSlug) redirect(`/organizations/${l.profileSlug}`);
   const entry = importedEntry(l);
-  const similar = pickSimilar(await listDirectory(), { id: l.id, cause: l.cause, budget: entry.budget });
+  const similar = pickSimilar(await listDirectory(), { id: l.id, causes: l.causes, budget: entry.budget });
 
   const latest = l.filings.find((f) => f.totalExpenses != null);
   const midSize =
@@ -92,7 +92,9 @@ export default async function ListingPage({ params, searchParams }: Props) {
         }
         badges={
           <>
-            <CauseBadge slug={l.cause} />
+            {l.causes.map((c) => (
+              <CauseBadge key={c} slug={c} />
+            ))}
             {l.claimed ? (
               <span className="text-xs text-muted">Claimed by the organization</span>
             ) : (

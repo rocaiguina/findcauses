@@ -28,7 +28,7 @@ export function buildShortlist(entries: DirectoryEntry[], criteria: Criteria, si
   const prefs = toPrefs(criteria);
   const inScope = entries.filter(
     (e) =>
-      (!prefs.causes.length || prefs.causes.includes(e.cause)) && (!prefs.states.length || prefs.states.includes(e.state)),
+      (!prefs.causes.length || e.causes.some((c) => prefs.causes.includes(c))) && (!prefs.states.length || prefs.states.includes(e.state)),
   );
 
   // Best project per organization, so the shortlist is six different organizations.

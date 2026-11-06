@@ -78,7 +78,6 @@ function Facts({ entry }: { entry: DirectoryEntry }) {
 
 /** A search-result row, used in the directory list. */
 export function OrgRow({ entry }: { entry: DirectoryEntry }) {
-  const cause = getCause(entry.cause);
   return (
     <li className="flex items-start gap-4 border-b border-line py-5">
       <Link href={entry.href} tabIndex={-1} className="pt-0.5">
@@ -98,10 +97,15 @@ export function OrgRow({ entry }: { entry: DirectoryEntry }) {
         </div>
         <p className="mt-0.5 line-clamp-1 text-sm text-muted">{entry.summary}</p>
         <p className="mt-1.5 flex flex-wrap items-center gap-x-2 text-xs text-muted">
-          <span className="inline-flex items-center gap-1.5">
-            <span className="h-1.5 w-1.5 rounded-full" style={{ backgroundColor: cause?.color }} aria-hidden />
-            {cause?.label}
-          </span>
+          {entry.causes.map((slug) => {
+            const cause = getCause(slug);
+            return (
+              <span key={slug} className="inline-flex items-center gap-1.5">
+                <span className="h-1.5 w-1.5 rounded-full" style={{ backgroundColor: cause?.color }} aria-hidden />
+                {cause?.label}
+              </span>
+            );
+          })}
           <span aria-hidden>·</span>
           <span>{place(entry)}</span>
           {entry.irsSince && (

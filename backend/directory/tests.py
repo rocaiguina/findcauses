@@ -153,6 +153,36 @@ class NonprofitFlowTests(TestCase):
 
 
 @override_settings(EMAIL_DELIVERY="log", SITE_URL="http://testserver")
+class MultipleCausesTests(TestCase):
+    def setUp(self):
+        self.org = Organization.objects.create(slug="test-org", name="Test Org", ein="660000001", website="https://testorg.org")
+        IrsFiling.objects.create(organization=self.org, tax_year=timezone.now().year - 2, form_type="990")
+        Claim.objects.create(user=User.objects.create(email="ana@testorg.org"), organization=self.org, status=Claim.Status.ACTIVE)
+        self.client.force_login(User.objects.get(email="ana@testorg.org"))
+
+    def test_profile_saves_other_causes_and_the_api_lists_primary_first(self):
+        res = self.client.post("/api/me/organizations/test-org/profile", profile_form(otherCauses=["civil-rights", "economy", "civil-rights"]))
+        self.assertEqual(res.status_code, 200, res.content)
+        self.org.refresh_from_db()
+        self.assertEqual(self.org.other_causes, ["civil-rights"])
+        api = self.client.get("/api/organizations/test-org").json()
+        self.assertEqual((api["cause"], api["causes"]), ("economy", ["economy", "civil-rights"]))
+        form = self.client.get("/api/me/organizations/test-org/profile").json()
+        self.assertEqual(form["values"]["otherCauses"], "civil-rights")
+
+    def test_other_causes_are_optional_and_listings_have_causes(self):
+        self.assertEqual(self.client.post("/api/me/organizations/test-org/profile", profile_form()).status_code, 200)
+        self.org.refresh_from_db()
+        self.assertEqual(self.org.other_causes, [])
+        self.assertEqual(self.client.get("/api/listings/test-org").json()["causes"], ["economy"])
+
+    def test_an_unknown_cause_is_rejected(self):
+        res = self.client.post("/api/me/organizations/test-org/profile", profile_form(otherCauses=["made-up"]))
+        self.assertEqual(res.status_code, 422)
+        self.assertIn("otherCauses", res.json()["errors"])
+
+
+@override_settings(EMAIL_DELIVERY="log", SITE_URL="http://testserver")
 class ClaimEmailTests(TestCase):
     def setUp(self):
         self.org = Organization.objects.create(slug="test-org", name="Test & Org", website="https://testorg.org")
@@ -238,6 +268,19 @@ class AdminPagesTests(TestCase):
         Form990Upload.objects.create(organization=self.org, file_name="990.pdf", data=b"%PDF-1.4 test")
         res = self.client.get(f"/admin/directory/organization/{self.org.pk}/change/")
         self.assertContains(res, f"/admin/990/{self.org.pk}")
+
+    def test_admin_saves_and_filters_several_causes(self):
+        url = f"/admin/directory/organization/{self.org.pk}/change/"
+        form = self.client.get(url).context["adminform"].form
+        self.assertEqual([k for k, _ in form.fields["other_causes"].choices][:2], ["climate-change", "economy"])
+        self.org.other_causes = ["economy"]
+        self.org.cause = "climate-change"
+        self.org.save()
+        Organization.objects.create(slug="other", name="Other", cause="civil-rights")
+        names = lambda res: [o.slug for o in res.context["cl"].result_list]  # noqa: E731
+        self.assertEqual(names(self.client.get("/admin/directory/organization/?any_cause=economy")), ["test-org"])
+        self.assertEqual(names(self.client.get("/admin/directory/organization/?any_cause=climate-change")), ["test-org"])
+        self.assertEqual(names(self.client.get("/admin/directory/organization/?any_cause=civil-rights")), ["other"])
 
     def test_every_list_and_add_page_loads(self):
         for model in ["organization", "claim", "subscription"]:
