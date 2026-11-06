@@ -1,6 +1,6 @@
 # FindCauses
 
-A directory of mid-size U.S. nonprofits ($1M–$50M in annual expenses per Form 990) built for funders —
+A directory of mid-size U.S. nonprofits ($1M–$20M in annual expenses per Form 990, IRS-recognized for at least 10 years) built for funders —
 individual donors, foundations and corporate givers.
 
 Each profile covers mission and focus areas, impact metrics, track record, networks, roadmap, Form 990

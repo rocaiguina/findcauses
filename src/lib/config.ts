@@ -1,14 +1,15 @@
 /**
- * FindCauses lists mid-size nonprofits, measured by total annual expenses
- * reported on the latest Form 990 (Part I, line 18).
+ * FindCauses lists mid-size, established nonprofits: total annual expenses from the latest Form 990
+ * (Part I, line 18), and years since the IRS recognized them. Keep in sync with backend/directory/profile_form.py.
  */
 export const MID_SIZE_MIN_BUDGET = 1_000_000;
-export const MID_SIZE_MAX_BUDGET = 50_000_000;
+export const MID_SIZE_MAX_BUDGET = 20_000_000;
+export const MIN_IRS_YEARS = 10;
 
 export const BUDGET_BANDS = [
   { id: "1-5m", label: "$1M – $5M", min: 1_000_000, max: 5_000_000 },
   { id: "5-15m", label: "$5M – $15M", min: 5_000_000, max: 15_000_000 },
-  { id: "15-50m", label: "$15M – $50M", min: 15_000_000, max: 50_000_000 },
+  { id: "15-20m", label: "$15M – $20M", min: 15_000_000, max: 20_000_000 },
 ] as const;
 
 export const MAX_990_BYTES = 20 * 1024 * 1024;

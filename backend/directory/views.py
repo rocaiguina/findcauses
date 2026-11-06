@@ -205,7 +205,9 @@ def apply(request):
         slug, n = f"{base}-{n}", n + 1
     try:
         with transaction.atomic():
-            org = Organization.objects.create(slug=slug, ein=parsed.ein, name=parsed.fields["name"])
+            org = Organization.objects.create(
+                slug=slug, ein=parsed.ein, name=parsed.fields["name"], irs_ruling_date=parsed.irs_ruling_date
+            )
             _save_profile(org, parsed, status=Organization.Profile.PENDING)
             c = Claim.objects.create(
                 user=request.user,

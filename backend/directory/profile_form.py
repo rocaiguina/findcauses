@@ -6,6 +6,7 @@ organization completing or editing its claimed page, a section at a time). Error
 import json
 import re
 from dataclasses import dataclass, field
+from datetime import date
 
 from django.conf import settings
 from django.utils import timezone
@@ -13,7 +14,8 @@ from django.utils import timezone
 from .models import CAUSES, FUNDING_TYPES
 
 MID_SIZE_MIN_BUDGET = 1_000_000
-MID_SIZE_MAX_BUDGET = 50_000_000
+MID_SIZE_MAX_BUDGET = 20_000_000
+MIN_IRS_YEARS = 10
 STATES = (
     "AL AK AZ AR CA CO CT DE DC FL GA HI ID IL IN IA KS KY LA ME MD MA MI MN MS MO MT NE NV NH NJ NM "
     "NY NC ND OH OK OR PA PR RI SC SD TN TX UT VT VA WA WV WI WY"
@@ -130,6 +132,7 @@ class ParsedProfile:
     lists: dict = field(default_factory=dict)
     needs: list = field(default_factory=list)
     ein: str = ""
+    irs_ruling_date: object = None
     file: object = None
     errors: dict = field(default_factory=dict)
 
@@ -207,10 +210,12 @@ def parse_profile(data, files, *, new_organization: bool, file_required: bool) -
             e[key] = "Enter a valid amount."
         fin[attr] = n or 0
 
-    # Organizations already in the directory may be any size; new applicants must be mid-size.
+    # Organizations already in the directory are exempt; new applicants must be mid-size and established.
     if new_organization and "totalExpenses" not in e:
         if not MID_SIZE_MIN_BUDGET <= fin["total_expenses"] <= MID_SIZE_MAX_BUDGET:
-            e["totalExpenses"] = "FindCauses lists mid-size nonprofits with total expenses between $1,000,000 and $50,000,000."
+            e["totalExpenses"] = "FindCauses lists mid-size nonprofits with total expenses between $1,000,000 and $20,000,000."
+    if new_organization:
+        _check_irs_ruling(p, data.get("irsRulingDate", ""))
     functional = fin["program_expenses"] + fin["management_expenses"] + fin["fundraising_expenses"]
     if "programExpenses" not in e and abs(functional - fin["total_expenses"]) > fin["total_expenses"] * 0.01:
         e["programExpenses"] = "Program + management + fundraising should add up to total expenses (990 Part IX, line 25)."
@@ -269,6 +274,19 @@ def parse_profile(data, files, *, new_organization: bool, file_required: bool) -
     if data.get("certify") != "on":
         e["certify"] = "You must certify that the information is accurate."
     return p
+
+
+def _check_irs_ruling(p: ParsedProfile, raw) -> None:
+    """A "YYYY-MM" month, at least MIN_IRS_YEARS ago to the month."""
+    match = re.fullmatch(r"(\d{4})-(\d{2})", str(raw).strip())
+    if not match or not 1 <= int(match[2]) <= 12 or int(match[1]) < 1900:
+        p.errors["irsRulingDate"] = "Enter the month the IRS recognized your tax-exempt status, like 2010-06."
+        return
+    ruling = date(int(match[1]), int(match[2]), 1)
+    today = timezone.now().date()
+    if (today.year - ruling.year) * 12 + today.month - ruling.month < MIN_IRS_YEARS * 12:
+        p.errors["irsRulingDate"] = f"FindCauses lists organizations recognized by the IRS for at least {MIN_IRS_YEARS} years."
+    p.irs_ruling_date = ruling
 
 
 def _json_rows(raw):

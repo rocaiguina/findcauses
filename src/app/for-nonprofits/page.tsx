@@ -100,7 +100,7 @@ export default async function ForNonprofitsPage({ searchParams }: { searchParams
             <p className="text-muted">No organization matches “{q}”.</p>
           )}
           <p className="mt-6 text-sm text-muted">
-            Not listed? We list 501(c)(3) public charities with $1M–$50M in annual expenses.{" "}
+            Not listed? We list 501(c)(3) public charities with $1M–$20M in annual expenses, recognized by the IRS for at least 10 years.{" "}
             <Link href="/apply" className="text-link">
               Apply to be listed
             </Link>

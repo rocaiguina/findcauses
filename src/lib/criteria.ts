@@ -18,9 +18,9 @@ export const GIFT_BANDS = [
 const GIFT_ALIASES: Record<string, GiftBand> = { "500k-plus": "500k-1m" };
 
 export const SIZES = [
-  { id: "mid", label: "Mid-size", help: "$1M–$50M budget: track record, and your gift still matters", min: 1_000_000, max: 50_000_000 },
+  { id: "mid", label: "Mid-size", help: "$1M–$20M budget: track record, and your gift still matters", min: 1_000_000, max: 20_000_000 },
   { id: "small", label: "Small", help: "Under $1M: grassroots, where a gift goes far", min: null, max: 1_000_000 },
-  { id: "large", label: "Large", help: "Over $50M: established institutions", min: 50_000_000, max: null },
+  { id: "large", label: "Large", help: "Over $20M: established institutions", min: 20_000_000, max: null },
   { id: "any", label: "No preference", help: "Any size", min: null, max: null },
 ] as const;
 

@@ -1,7 +1,8 @@
 import Link from "next/link";
 import { RibbonArtwork } from "@/components/Artwork";
 import { SaveButton } from "@/components/Save";
-import { MID_SIZE_MAX_BUDGET, MID_SIZE_MIN_BUDGET } from "@/lib/config";
+import { MID_SIZE_MAX_BUDGET, MID_SIZE_MIN_BUDGET, MIN_IRS_YEARS } from "@/lib/config";
+import { yearsSince } from "@/lib/format";
 import { money, placeName } from "@/lib/format";
 import { fundingTypeLabel } from "@/lib/funding";
 import { opportunitiesFor } from "@/lib/match";
@@ -11,9 +12,10 @@ export const dynamic = "force-dynamic";
 
 export default async function Home() {
   const entries = await listDirectory();
-  // Mid-size organizations' posted opportunities.
+  // Posted opportunities from mid-size, established organizations.
   const seeking = entries
     .filter((e) => e.budget == null || (e.budget >= MID_SIZE_MIN_BUDGET && e.budget <= MID_SIZE_MAX_BUDGET))
+    .filter((e) => !e.irsSince || yearsSince(e.irsSince) >= MIN_IRS_YEARS)
     .flatMap(opportunitiesFor)
     .filter((o) => !o.implied)
     .slice(0, 6);

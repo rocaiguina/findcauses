@@ -141,9 +141,10 @@ class NonprofitFlowTests(TestCase):
         self.sign_in("director@neworg.org")
         pdf = io.BytesIO(b"%PDF-1.4 test")
         pdf.name = "990.pdf"
-        res = self.client.post("/api/apply", {**profile_form(ein="66-0000002", name="New Org"), "form990": pdf})
+        res = self.client.post("/api/apply", {**profile_form(ein="66-0000002", name="New Org", irsRulingDate="2010-06"), "form990": pdf})
         self.assertEqual(res.status_code, 201, res.content)
         org = Organization.objects.get(ein="660000002")
+        self.assertEqual(org.irs_ruling_date.isoformat(), "2010-06-01")
         self.assertEqual(org.profile_status, Organization.Profile.PENDING)
         self.assertEqual(self.client.get(f"/api/organizations/{org.slug}").status_code, 404)
 
@@ -409,6 +410,39 @@ class ManageProfileTests(TestCase):
         self.client.force_login(User.objects.create(email="other@gmail.com"))
         self.assertEqual(self.save("basics").status_code, 403)
         self.assertEqual(self.client.get("/api/me/organizations/test-org/profile").status_code, 403)
+
+
+class ApplicationThresholdTests(TestCase):
+    def errors(self, **overrides):
+        data = {**profile_form(ein="66-0000002", irsRulingDate="2010-06"), **overrides}
+        return parse_profile(data, {}, new_organization=True, file_required=False).errors
+
+    def years_ago(self, years, months=0):
+        today = timezone.now().date()
+        total = today.year * 12 + today.month - 1 - years * 12 - months
+        return f"{total // 12}-{total % 12 + 1:02d}"
+
+    def test_a_qualifying_application_passes(self):
+        self.assertEqual(self.errors(), {})
+
+    def test_budget_tops_out_at_20_million(self):
+        fits = {"totalRevenue": "20000000", "programExpenses": "20000000", "managementExpenses": "0", "fundraisingExpenses": "0", "totalExpenses": "20000000"}
+        self.assertNotIn("totalExpenses", self.errors(**fits))
+        over = {**fits, "totalRevenue": "20000001", "programExpenses": "20000001", "totalExpenses": "20000001"}
+        self.assertIn("$20,000,000", self.errors(**over)["totalExpenses"])
+
+    def test_irs_recognition_needs_at_least_10_years(self):
+        self.assertNotIn("irsRulingDate", self.errors(irsRulingDate=self.years_ago(10)))
+        self.assertIn("at least 10 years", self.errors(irsRulingDate=self.years_ago(9, 11))["irsRulingDate"])
+
+    def test_a_missing_or_malformed_month_is_rejected(self):
+        for bad in ("", "2010", "2010-13", "June 2010"):
+            self.assertIn("irsRulingDate", self.errors(irsRulingDate=bad), bad)
+
+    def test_organizations_already_listed_are_exempt(self):
+        over = {"totalRevenue": "90000000", "programExpenses": "90000000", "managementExpenses": "0", "fundraisingExpenses": "0", "totalExpenses": "90000000"}
+        errors = parse_profile({**profile_form(), **over}, {}, new_organization=False, file_required=False).errors
+        self.assertEqual(errors, {})
 
 
 class DomainMatchTests(TestCase):

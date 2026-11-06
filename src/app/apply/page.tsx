@@ -27,7 +27,8 @@ export default async function ApplyPage() {
       <ul className="mt-6 flex flex-wrap gap-2 text-xs">
         {[
           "501(c)(3) public charity",
-          "$1M–$50M in annual expenses",
+          "$1M–$20M in annual expenses",
+          "IRS-recognized for 10+ years",
           "Filed Form 990 (not 990-N/EZ)",
           "~30 minutes",
         ].map((t) => (

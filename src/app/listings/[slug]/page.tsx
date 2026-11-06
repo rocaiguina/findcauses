@@ -53,7 +53,7 @@ export default async function ListingPage({ params, searchParams }: Props) {
           { value: money(latest.totalExpenses ?? 0), label: `Annual budget (FY${latest.taxYear})` },
           { value: latest.totalRevenue == null ? "—" : money(latest.totalRevenue), label: "Revenue" },
           { value: latest.netAssets == null ? "—" : money(latest.netAssets), label: "Net assets" },
-          { value: midSize ? "Yes" : "No", label: "Mid-size ($1M–$50M)" },
+          { value: midSize ? "Yes" : "No", label: "Mid-size ($1M–$20M)" },
         ]
       : [{ value: <StatusPill>990 not available yet</StatusPill>, label: "Annual budget" }]),
   ];

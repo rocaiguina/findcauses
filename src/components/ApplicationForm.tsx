@@ -8,6 +8,7 @@ import {
   CertifyField,
   ContactFields,
   ErrorSummary,
+  Field,
   FinancialFields,
   Initial,
   LISTS,
@@ -53,6 +54,14 @@ export function ApplicationForm() {
 
         <Step n={1} title="Organization" hint="Basic identity, as it appears on your IRS filings.">
           <OrganizationFields errors={errors} />
+          <Field
+            name="irsRulingDate"
+            label="When the IRS recognized your tax-exempt status"
+            type="month"
+            placeholder="2010-06"
+            hint="The month on your IRS determination letter. FindCauses lists organizations recognized for at least 10 years."
+            errors={errors}
+          />
         </Step>
 
         <Step n={2} title="Mission & focus" hint="How funders will find you in the directory.">
@@ -120,7 +129,7 @@ export function ApplicationForm() {
         <Step
           n={7}
           title="Financials from your Form 990"
-          hint="Copy the figures exactly from your most recent filed 990. We verify them against the uploaded PDF. FindCauses lists organizations with $1M–$50M in total expenses."
+          hint="Copy the figures exactly from your most recent filed 990. We verify them against the uploaded PDF. FindCauses lists organizations with $1M–$20M in total expenses."
         >
           <FinancialFields errors={errors} />
         </Step>
